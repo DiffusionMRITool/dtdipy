@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk <vtk_file>] [--vtk2 <vtk2_file>] [--image <nifti_file>] [--track <track_file>] [--size size] [--world_coords] [--frame] [--scalar_range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor color] [-v] [--no-normal] [--so opa]
+  VTKPolyData_dipy.py [--vtk <vtk_file>] [--vtk2 <vtk2_file>] [--image <nifti_file>] [--track <track_file>] [--size size] [--world_coords] [--frame] [--scalar_range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor color] [-v] [--no-normal] [--ni] [--so opa]
   VTKPolyData_dipy.py (-h | --help)
 
 Options:
@@ -22,6 +22,7 @@ Options:
   --bgcolor color          Back ground color. [Default: 0,0,0]
   --frame                  Wireframe visualization.
   --no-normal              Do not use vtkPolyDataNormals for polydata visualization.
+  --ni                     No interpolation for image. Set InterpolateOff.
 
   -h --help                Show this screen.
   -v --verbose             Verbose.
@@ -194,6 +195,10 @@ def scene_add_image(scene, image_file, _args):
                                 y_midpoint,
                                 0,
                                 shape[2] - 1)
+
+    image_actor_x.InterpolateOff() if _args['--ni'] else image_actor_x.InterpolateOn()
+    image_actor_y.InterpolateOff() if _args['--ni'] else image_actor_y.InterpolateOn()
+    image_actor_z.InterpolateOff() if _args['--ni'] else image_actor_z.InterpolateOn()
 
     scene.add(image_actor_z)
     scene.add(image_actor_x)
