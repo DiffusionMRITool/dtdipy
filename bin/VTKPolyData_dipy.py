@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Description: Render a list of VTK data, track data, a nifti image, then view or save PNG or save WebGL.
 The code uses dipy and fury.
@@ -329,6 +329,9 @@ def main():
 
     if (args['--verbose']):
         print('_args=',_args)
+
+    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image']:
+        raise("need inputs for --vtk and (or) --vtk2 and (or) --image")
 
     affine=np.eye(4)
 
