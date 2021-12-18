@@ -205,21 +205,21 @@ def scene_add_image(scene, image_file, _args):
 def scene_add_ui(scene, _args, image_actor_x, image_actor_y, image_actor_z, affine, shape):
     '''add ui for image slice'''
 
-    line_slider_z = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[2] - 1,
-                                    initial_value=shape[2] / 2,
-                                    text_template="{value:.0f}",
-                                    length=140)
-
     line_slider_x = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[0] - 1,
+                                    max_value=shape[0] - 1 if shape[0]>1 else 1,
                                     initial_value=shape[0] / 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
     line_slider_y = ui.LineSlider2D(min_value=0,
-                                    max_value=shape[1] - 1,
+                                    max_value=shape[1] - 1 if shape[1]>1 else 1,
                                     initial_value=shape[1] / 2,
+                                    text_template="{value:.0f}",
+                                    length=140)
+
+    line_slider_z = ui.LineSlider2D(min_value=0,
+                                    max_value=shape[2] - 1 if shape[2]>1 else 1,
+                                    initial_value=shape[2] / 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
