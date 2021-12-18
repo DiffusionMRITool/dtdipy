@@ -39,7 +39,7 @@ class TrackConvertFlow(Workflow):
 
             logging.info('Convert track of {0}'.format(input_path))
 
-            track = load_tractogram(input_path, reference)
+            track = load_tractogram(input_path, reference, bbox_valid_check=False)
             save_tractogram(track, out_track, bbox_valid_check=False)
 
             logging.info('Track saved at {0}'.format(out_track_path))
