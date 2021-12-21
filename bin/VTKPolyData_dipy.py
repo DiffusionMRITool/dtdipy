@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1,f2] [--vtk2 f1,f2] [--image <nifti_file>] [--track f1,f2] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni]
+  VTKPolyData_dipy.py [--vtk f1,f2] [--vtk2 f1,f2] [--image <nifti_file>] [--track f1,f2] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni]
   VTKPolyData_dipy.py (-h | --help)
 
 Options:
@@ -15,11 +15,12 @@ Options:
   --sh sh_file             Input 4D nifti sphercial harmonic (SH) coefficient image file for ODF or EAP.
   --track f1,f2            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension (lower triangle ).
-  --axes x,y,z             Visualize image x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
+  --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
+  --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
   --image-opacity opa      Slice opacity for --image. [Default: 0.8]
-  --sh-opacity opacity         SH glyph opacity for --sh. [Default: 1.0]
+  --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
@@ -75,6 +76,7 @@ def get_input_args(args):
     _args['--vtk2'] = args['--vtk2'].split(',') if args['--vtk2'] else args['--vtk2']
     _args['--track'] = args['--track'].split(',') if args['--track'] else args['--track']
     _args['--axes'] = arg_values(args['--axes'], float, 3)
+    _args['--box'] = arg_values(args['--box'], int, 6)
     _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
@@ -85,6 +87,41 @@ def get_input_args(args):
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
     return _args
+
+
+def set_box_on_shape(box, shape):
+    '''correct box values based on shape'''
+
+    for i in range(3):
+        if box[2*i]>box[2*i+1]:
+            raise("wrong box is given. box=", box)
+        box[2*i] = max(box[2*i], 0)
+        box[2*i+1] = shape[i]-1 if box[2*i+1]<0 else min(box[2*i+1], shape[i]-1)
+
+
+def update_visualbox(box, vbox):
+    '''update visual vbox based on given box'''
+
+    # if box is default value, do not change vbox
+    if box==[-1]*len(box):
+        return
+
+    #  if vbox is a x/y/z slice, and it is out of the box, make it invisible
+    for i in range(3):
+        if vbox[2*i]==vbox[2*i+1]:
+            if box[2*i]>=0 and box[2*i+1]>=0 and not box[2*i]<=vbox[2*i]<=box[2*i+1]:
+                vbox[2*i] = vbox[2*i+1] = -1
+            elif box[2*i]<0 and box[2*i+1]>=0 and not vbox[2*i]<=box[2*i+1]:
+                vbox[2*i] = vbox[2*i+1] = -1
+            elif box[2*i]>=0 and box[2*i+1]<0 and not box[2*i]<=vbox[2*i]:
+                vbox[2*i] = vbox[2*i+1] = -1
+
+    # update vbox as the intersection between box and vbox
+    for i in range(3):
+        if vbox[2*i]!=-1 and box[2*i]!=-1:
+            vbox[2*i] = max(box[2*i], vbox[2*i])
+        if vbox[2*i+1]!=-1 and box[2*i+1]!=-1:
+            vbox[2*i+1] = min(box[2*i+1], vbox[2*i+1])
 
 
 def scene_add_tract(scene, track_file, affine, _args):
@@ -183,8 +220,8 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     data, affine = load_nifti(image_file)
     shape = data.shape
     if _args['--verbose']:
-        print('shape=', shape)
-        print('affine=', affine)
+        print('image shape=', shape)
+        print('image affine=', affine)
 
     if not _args['--wc']:
         actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4))
@@ -252,29 +289,37 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     global_cm = False
 
     # SH (ODF/EAP) slicer for axial slice
+    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_z'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
                                 B_matrix=B_low)
+    actor_dict['sh_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # SH slicer for coronal slice
+    vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_y'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
                                 B_matrix=B_low)
-    actor_dict['sh_actor_y'].display_extent(0, grid_shape[0] - 1, grid_shape[1]//2,
-                            grid_shape[1]//2, 0, grid_shape[2] - 1)
+    actor_dict['sh_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # SH slicer for sagittal slice
+    vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_x'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
                                 B_matrix=B_low)
-    actor_dict['sh_actor_x'].display_extent(grid_shape[0]//2, grid_shape[0]//2, 0,
-                            grid_shape[1] - 1, 0, grid_shape[2] - 1)
+    actor_dict['sh_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     if _args['--axes'][0]==1:
         scene.add(actor_dict['sh_actor_x'])
@@ -307,15 +352,23 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     scale = _args['--tensor-scale']
     opacity = _args['--tensor-opacity']
 
+    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
+    actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
+    vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_y'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
-    actor_dict['tensor_actor_y'].display_extent(0, grid_shape[0] - 1, grid_shape[1]//2,
-                            grid_shape[1]//2, 0, grid_shape[2] - 1)
+    actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
+    vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
+    if _args['--box']:
+        update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_x'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
-    actor_dict['tensor_actor_x'].display_extent(0, grid_shape[0] - 1, grid_shape[1]//2,
-                            grid_shape[1]//2, 0, grid_shape[2] - 1)
+    actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
 
     if _args['--axes'][0]==1:
@@ -357,30 +410,39 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
 
     def change_slice_x(slider):
         x = int(np.round(slider.value))
+        vbox = [x, x, 0, shape[1] - 1, 0, shape[2] - 1]
+        if _args['--box']:
+            update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_x'].display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
         if _args['--tensor']:
-            actor_dict['tensor_actor_x'].display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
+            actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
-            actor_dict['sh_actor_x'].slice_along_axis(x, 'xaxis')
+            actor_dict['sh_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_slice_y(slider):
         y = int(np.round(slider.value))
+        vbox = [0, shape[0] - 1, y, y, 0, shape[2] - 1]
+        if _args['--box']:
+            update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_y'].display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
         if _args['--tensor']:
-            actor_dict['tensor_actor_y'].display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
+            actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
-            actor_dict['sh_actor_y'].slice_along_axis(y, 'yaxis')
+            actor_dict['sh_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
+        vbox = [0, shape[0] - 1, 0, shape[1] - 1, z, z]
+        if _args['--box']:
+            update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_z'].display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
         if _args['--tensor']:
-            actor_dict['tensor_actor_z'].display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
+            actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
-            actor_dict['sh_actor_z'].slice_along_axis(z, 'zaxis')
+            actor_dict['sh_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_opacity(slider):
         _args['--image-opacity'] = slider.value
@@ -469,6 +531,7 @@ def main():
         raise("need inputs for --vtk, --vtk2, --image, --sh, --tensor")
 
     affine=np.eye(4)
+    shape=[]
 
     scene = window.Scene()
     actor_dict = {}
@@ -494,6 +557,7 @@ def main():
 
         if _args['--image'] and tensor_shape!=shape:
             print("Warning: tensor shape is different from image shape. tensor_shape=", tensor_shape, ", image shape=", shape)
+            shape = min(shape, tensor_shape)
         if _args['--image'] and np.linalg.norm(tensor_affine-affine)>1e-5:
             print("Warning: tensor affine is different from image affine. tensor_affne=", tensor_affine, ", image affine=", affine)
         if not _args['--image']:
@@ -505,10 +569,20 @@ def main():
 
         if _args['--image'] and sh_shape!=shape:
             print("Warning: sh shape is different from image shape. sh_shape=", sh_shape, ", image shape=", shape)
+            shape = min(shape, sh_shape)
         if _args['--image'] and np.linalg.norm(sh_affine-affine)>1e-5:
             print("Warning: sh affine is different from image affine. sh_affne=", sh_affine, ", image affine=", affine)
         if not _args['--image']:
             affine, shape = sh_affine, sh_shape
+
+    if _args['--verbose']:
+        print('shape=', shape)
+        print('affine=', affine)
+
+    if _args['--image'] or _args['--tensor'] or _args['--sh']:
+        set_box_on_shape(_args['--box'], shape)
+        if _args['--verbose']:
+            print('set box=', _args['--box'])
 
     #  add track files
     if _args['--track']:
