@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1,f2] [--vtk2 f1,f2] [--image <nifti_file>] [--track f1,f2] [--sh sh_file] [--tensor tensor_file] [--image_axes x,y,z] [--image_opa opa] [--sh_scale scale] [--sh_opa opa] [--tensor_scale scale] [--tensor_opa opa] [--size s1,s2] [--world_coords] [--frame] [--scalar_range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni]
+  VTKPolyData_dipy.py [--vtk f1,f2] [--vtk2 f1,f2] [--image <nifti_file>] [--track f1,f2] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni]
   VTKPolyData_dipy.py (-h | --help)
 
 Options:
@@ -15,17 +15,17 @@ Options:
   --sh sh_file             Input 4D nifti sphercial harmonic (SH) coefficient image file for ODF or EAP.
   --track f1,f2            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension (lower triangle ).
-  --image_axes x,y,z       Visualize image x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
-  --scalar_range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
+  --axes x,y,z             Visualize image x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
+  --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
-  --image_opa opacity      Slice opacity for --image. [Default: 0.6]
-  --sh_opa opacity         SH glyph opacity for --sh. [Default: 1.0]
-  --sh_scale scale         SH radial scale for --sh. [Default: 1.0]
-  --tensor_scale scale     Tensor scale for --tensor. [Default: 200]
-  --tensor_opa opacity     Tensor glyph opacity for --tensor. [Default: 1.0]
-  --world_coords           Use world coordinates.
+  --image-opacity opa      Slice opacity for --image. [Default: 0.8]
+  --sh-opacity opacity         SH glyph opacity for --sh. [Default: 1.0]
+  --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
+  --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
+  --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
+  --wc                     Use world coordinates.
   --png png_file           Output png file.
-  --zoom zoom              Camera zoom factor. [Default: 1.1]
+  --zoom zoom              Camera zoom factor. [Default: 1.0]
   --bgcolor r,g,b          Back ground color. [Default: 0,0,0]
   --frame                  Wireframe visualization.
   --no-normal              Do not use vtkPolyDataNormals for polydata visualization.
@@ -74,15 +74,15 @@ def get_input_args(args):
     _args['--vtk'] = args['--vtk'].split(',') if args['--vtk'] else args['--vtk']
     _args['--vtk2'] = args['--vtk2'].split(',') if args['--vtk2'] else args['--vtk2']
     _args['--track'] = args['--track'].split(',') if args['--track'] else args['--track']
-    _args['--image_axes'] = arg_values(args['--image_axes'], float, 3)
-    _args['--scalar_range'] = arg_values(args['--scalar_range'], float, 2)
+    _args['--axes'] = arg_values(args['--axes'], float, 3)
+    _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
-    _args['--image_opa'] = arg_values(args['--image_opa'], float, 1)[0]
-    _args['--tensor_opa'] = arg_values(args['--tensor_opa'], float, 1)[0]
-    _args['--tensor_scale'] = arg_values(args['--tensor_scale'], float, 1)[0]
-    _args['--sh_opa'] = arg_values(args['--sh_opa'], float, 1)[0]
-    _args['--sh_scale'] = arg_values(args['--sh_scale'], float, 1)[0]
+    _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
+    _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1)[0]
+    _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1)[0]
+    _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
+    _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
     return _args
 
@@ -108,7 +108,7 @@ def scene_add_tract(scene, track_file, affine, _args):
             streamlines = list(dpy_obj.read_tracks())
             dpy_obj.close()
 
-    if not _args['--world_coords']:
+    if not _args['--wc']:
         from dipy.tracking.streamline import transform_streamlines
         streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
@@ -151,10 +151,10 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
 
     if polyData.GetPointData().GetScalars() and polyData.GetPointData().GetScalars().GetNumberOfComponents()==1:
         lut = vtk.vtkLookupTable()
-        if _args['--scalar_range'][0] == -1 or _args['--scalar_range'][1] == -1:
+        if _args['--scalar-range'][0] == -1 or _args['--scalar-range'][1] == -1:
             valueRange = polyData.GetScalarRange()
-        vr0 = _args['--scalar_range'][0] if _args['--scalar_range'][0] != -1 else valueRange[0]
-        vr1 = _args['--scalar_range'][1] if _args['--scalar_range'][1] != -1 else valueRange[1]
+        vr0 = _args['--scalar-range'][0] if _args['--scalar-range'][0] != -1 else valueRange[0]
+        vr1 = _args['--scalar-range'][1] if _args['--scalar-range'][1] != -1 else valueRange[1]
         valueRange = (vr0, vr1)
         lut.SetTableRange(valueRange[0], valueRange[1])
         if is_vtk2:
@@ -186,12 +186,12 @@ def scene_add_image(scene, image_file, actor_dict, _args):
         print('shape=', shape)
         print('affine=', affine)
 
-    if not _args['--world_coords']:
+    if not _args['--wc']:
         actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4))
     else:
         actor_dict['image_actor_z'] = actor.slicer(data, affine)
 
-    actor_dict['image_actor_z'].opacity(_args['--image_opa'])
+    actor_dict['image_actor_z'].opacity(_args['--image-opacity'])
 
     actor_dict['image_actor_x'] = actor_dict['image_actor_z'].copy()
     x_midpoint = int(np.round(shape[0] / 2))
@@ -214,11 +214,11 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     actor_dict['image_actor_y'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_y'].InterpolateOn()
     actor_dict['image_actor_z'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_z'].InterpolateOn()
 
-    if _args['--image_axes'][0]==1:
+    if _args['--axes'][0]==1:
         scene.add(actor_dict['image_actor_x'])
-    if _args['--image_axes'][1]==1:
+    if _args['--axes'][1]==1:
         scene.add(actor_dict['image_actor_y'])
-    if _args['--image_axes'][2]==1:
+    if _args['--axes'][2]==1:
         scene.add(actor_dict['image_actor_z'])
 
     return affine, shape
@@ -230,7 +230,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     sh_img = nib.load(sh_file)
     sh = sh_img.get_fdata()
     sh_affine = sh_img.affine
-    affine = sh_affine if _args['--world_coords'] else np.eye(4)
+    affine = sh_affine if _args['--wc'] else np.eye(4)
     grid_shape = sh.shape[:-1]
     sh_order = order_from_ncoef(sh.shape[-1])
 
@@ -244,11 +244,11 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     _args['sphere_dict'] = {'Low resolution': (sphere_low, B_low),
                 'High resolution': (sphere_high, B_high)}
 
-    scale = 0.5*_args['--sh_scale']
+    scale = 0.5*_args['--sh-scale']
     norm = False
     colormap = None
     radial_scale = True
-    opacity = _args['--sh_opa']
+    opacity = _args['--sh-opacity']
     global_cm = False
 
     # SH (ODF/EAP) slicer for axial slice
@@ -276,11 +276,11 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     actor_dict['sh_actor_x'].display_extent(grid_shape[0]//2, grid_shape[0]//2, 0,
                             grid_shape[1] - 1, 0, grid_shape[2] - 1)
 
-    if _args['--image_axes'][0]==1:
+    if _args['--axes'][0]==1:
         scene.add(actor_dict['sh_actor_x'])
-    if _args['--image_axes'][1]==1:
+    if _args['--axes'][1]==1:
         scene.add(actor_dict['sh_actor_y'])
-    if _args['--image_axes'][2]==1:
+    if _args['--axes'][2]==1:
         scene.add(actor_dict['sh_actor_z'])
 
     return sh_affine, grid_shape
@@ -293,7 +293,7 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     tensor = tensor_img.get_fdata()
     tensor_affine = tensor_img.affine
 
-    affine = tensor_affine if _args['--world_coords'] else np.eye(4)
+    affine = tensor_affine if _args['--wc'] else np.eye(4)
     grid_shape = tensor.shape[:-1]
 
     eig = eig_from_lo_tri(tensor)
@@ -304,8 +304,8 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     norm_evals = False
 
     sphere = get_sphere('symmetric362')
-    scale = _args['--tensor_scale']
-    opacity = _args['--tensor_opa']
+    scale = _args['--tensor-scale']
+    opacity = _args['--tensor-opacity']
 
     actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
 
@@ -318,11 +318,11 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
                             grid_shape[1]//2, 0, grid_shape[2] - 1)
 
 
-    if _args['--image_axes'][0]==1:
+    if _args['--axes'][0]==1:
         scene.add(actor_dict['tensor_actor_x'])
-    if _args['--image_axes'][1]==1:
+    if _args['--axes'][1]==1:
         scene.add(actor_dict['tensor_actor_y'])
-    if _args['--image_axes'][2]==1:
+    if _args['--axes'][2]==1:
         scene.add(actor_dict['tensor_actor_z'])
 
     return tensor_affine, grid_shape
@@ -351,7 +351,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
 
     opacity_slider = ui.LineSlider2D(min_value=0.0,
                                     max_value=1.0,
-                                    initial_value=_args['--image_opa'],
+                                    initial_value=_args['--image-opacity'],
                                     length=140)
 
 
@@ -383,11 +383,11 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
             actor_dict['sh_actor_z'].slice_along_axis(z, 'zaxis')
 
     def change_opacity(slider):
-        _args['--image_opa'] = slider.value
+        _args['--image-opacity'] = slider.value
         if _args['--image']:
-            actor_dict['image_actor_x'].opacity(_args['--image_opa'])
-            actor_dict['image_actor_y'].opacity(_args['--image_opa'])
-            actor_dict['image_actor_z'].opacity(_args['--image_opa'])
+            actor_dict['image_actor_x'].opacity(_args['--image-opacity'])
+            actor_dict['image_actor_y'].opacity(_args['--image-opacity'])
+            actor_dict['image_actor_z'].opacity(_args['--image-opacity'])
 
     def change_sphere(combobox):
         sphere, B = _args['sphere_dict'][combobox.selected_text]
@@ -421,7 +421,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
         return label
 
 
-    num = int(_args['--image_axes'][0]==1)+ int(_args['--image_axes'][1]==1) + int(_args['--image_axes'][2]==1)
+    num = int(_args['--axes'][0]==1)+ int(_args['--axes'][1]==1) + int(_args['--axes'][2]==1)
     bgc = _args['--bgcolor']
     panel = ui.Panel2D(size=(300, 50*(num+1)),
                     color=(1-bgc[0], 1-bgc[1], 1-bgc[2]),
@@ -430,20 +430,20 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
     panel.center = (_args['--size'][0]-200, 120)
 
     high_1 = 0.6
-    if _args['--image_axes'][0]==1:
+    if _args['--axes'][0]==1:
         line_slider_label_x = build_label(text="X Slice")
         panel.add_element(line_slider_label_x, (0.1, high_1 if num==1 else 0.75))
         panel.add_element(line_slider_x, (0.38, high_1 if num==1 else 0.75))
-    if _args['--image_axes'][1]==1:
+    if _args['--axes'][1]==1:
         line_slider_label_y = build_label(text="Y Slice")
         panel.add_element(line_slider_label_y, (0.1, high_1 if num==1 else 0.55))
         panel.add_element(line_slider_y, (0.38, high_1 if num==1 else 0.55))
-    if _args['--image_axes'][2]==1:
+    if _args['--axes'][2]==1:
         line_slider_label_z = build_label(text="Z Slice")
         panel.add_element(line_slider_label_z, (0.1, high_1 if num==1 else 0.35))
         panel.add_element(line_slider_z, (0.38, high_1 if num==1 else 0.35))
 
-    if _args['--image_axes'][0]==1 or _args['--image_axes'][1]==1 or _args['--image_axes'][2]==1:
+    if _args['--axes'][0]==1 or _args['--axes'][1]==1 or _args['--axes'][2]==1:
         opacity_slider_label = build_label(text="Opacity")
         panel.add_element(opacity_slider_label, (0.1, 0.15))
         panel.add_element(opacity_slider, (0.38, 0.15))
@@ -465,7 +465,7 @@ def main():
     if (args['--verbose']):
         print('_args=',_args)
 
-    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor']:
+    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track']:
         raise("need inputs for --vtk, --vtk2, --image, --sh, --tensor")
 
     affine=np.eye(4)
