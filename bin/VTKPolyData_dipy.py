@@ -16,7 +16,7 @@ Options:
   --track f1,f2            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension (lower triangle ).
   --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
-  --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
+  --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
   --image-opacity opa      Slice opacity for --image. [Default: 0.8]
@@ -100,7 +100,7 @@ def set_box_on_shape(box, shape):
 
 
 def update_visualbox(box, vbox):
-    '''update visual vbox based on given box'''
+    '''update the visual vbox based on the given box'''
 
     # if box is default value, do not change vbox
     if box==[-1]*len(box):
@@ -290,8 +290,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
 
     # SH (ODF/EAP) slicer for axial slice
     vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_z'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
@@ -301,8 +300,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
 
     # SH slicer for coronal slice
     vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_y'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
@@ -312,8 +310,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
 
     # SH slicer for sagittal slice
     vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_x'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
@@ -353,20 +350,17 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     opacity = _args['--tensor-opacity']
 
     vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_y'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
-    if _args['--box']:
-        update_visualbox(_args['--box'], vbox)
+    update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_x'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
@@ -411,8 +405,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         vbox = [x, x, 0, shape[1] - 1, 0, shape[2] - 1]
-        if _args['--box']:
-            update_visualbox(_args['--box'], vbox)
+        update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_x'].display_extent(x, x, 0, shape[1] - 1, 0, shape[2] - 1)
         if _args['--tensor']:
@@ -423,8 +416,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
     def change_slice_y(slider):
         y = int(np.round(slider.value))
         vbox = [0, shape[0] - 1, y, y, 0, shape[2] - 1]
-        if _args['--box']:
-            update_visualbox(_args['--box'], vbox)
+        update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_y'].display_extent(0, shape[0] - 1, y, y, 0, shape[2] - 1)
         if _args['--tensor']:
@@ -435,8 +427,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
     def change_slice_z(slider):
         z = int(np.round(slider.value))
         vbox = [0, shape[0] - 1, 0, shape[1] - 1, z, z]
-        if _args['--box']:
-            update_visualbox(_args['--box'], vbox)
+        update_visualbox(_args['--box'], vbox)
         if _args['--image']:
             actor_dict['image_actor_z'].display_extent(0, shape[0] - 1, 0, shape[1] - 1, z, z)
         if _args['--tensor']:
