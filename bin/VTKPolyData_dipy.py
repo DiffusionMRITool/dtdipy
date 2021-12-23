@@ -66,27 +66,35 @@ def arg_values(value, typefunc, numberOfValues):
         value = value[1:-1]
     values = value.split(',')
     if numberOfValues > 0 and len(values) != numberOfValues:
-        raise "aa"
+        raise("wrong number of input values")
     return list(map(typefunc, values))
 
 
 def get_input_args(args):
     '''parse args'''
+
     _args = args
-    _args['--vtk'] = args['--vtk'].split(',') if args['--vtk'] else args['--vtk']
-    _args['--vtk2'] = args['--vtk2'].split(',') if args['--vtk2'] else args['--vtk2']
-    _args['--track'] = args['--track'].split(',') if args['--track'] else args['--track']
+
+    #  split by comma or space, arbitrary number of inputs
+    _args['--vtk'] = re.split(r'[,\s]\s*', args['--vtk']) if args['--vtk'] else args['--vtk']
+    _args['--vtk2'] = re.split(r'[,\s]\s*', args['--vtk2']) if args['--vtk2'] else args['--vtk2']
+    _args['--track'] = re.split(r'[,\s]\s*', args['--track']) if args['--track'] else args['--track']
+
+    #  split by comma, given number of inputs
     _args['--axes'] = arg_values(args['--axes'], float, 3)
     _args['--box'] = arg_values(args['--box'], int, 6)
     _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
+
+    # one input
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
     _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1)[0]
     _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1)[0]
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
+
     return _args
 
 
