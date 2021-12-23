@@ -39,11 +39,12 @@ Options:
 Author(s): Jian Cheng (jian.cheng.1983@gmail.com)
 """
 
-import vtk, os
+import os, re
 import numpy as np
 from docopt import docopt
 
 import utlVTK
+from utlVTK import vtk
 import utlDMRITool as utl
 
 import nibabel as nib
