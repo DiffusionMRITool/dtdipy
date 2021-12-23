@@ -54,7 +54,7 @@ from dipy.io.vtk import load_vtk_streamlines
 from dipy.io.dpy import Dpy
 from fury.utils import fix_winding_order
 from dipy.reconst.shm import sh_to_sf_matrix, order_from_ncoef
-from dipy.reconst.dti import eig_from_lo_tri
+from dipy.reconst.dti import from_lower_triangular, decompose_tensor
 from dipy.data import get_sphere
 
 
@@ -338,14 +338,15 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     affine = tensor_affine if _args['--wc'] else np.eye(4)
     grid_shape = tensor.shape[:-1]
 
-    eig = eig_from_lo_tri(tensor)
-    evals = eig[:,:,:,0:3]
-    evecs = eig[:,:,:,3:12].reshape(eig.shape[:-1] + (3, 3))
+    evals, evecs = decompose_tensor(from_lower_triangular(np.asarray(tensor)),
+                                    min_diffusivity=0)
+
 
     # Do not normalize eigenvalues by default
     norm_evals = False
 
-    sphere = get_sphere('symmetric362')
+    #  sphere = get_sphere('symmetric362')
+    sphere = get_sphere('repulsion100')
     scale = _args['--tensor-scale']
     opacity = _args['--tensor-opacity']
 
