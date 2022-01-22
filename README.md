@@ -1,4 +1,4 @@
-DDIPY 
-=====
+DTDIPY 
+======
 
-DMRITool with dipy.
+DMRITool with dipy (dtdipy).

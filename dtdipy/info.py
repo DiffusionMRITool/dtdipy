@@ -86,7 +86,7 @@ PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
 
 # Main setup parameters
-NAME                = 'ddipy'
+NAME                = 'dtdipy'
 MAINTAINER          = "Jian Cheng"
 MAINTAINER_EMAIL    = "neuroimaging@python.org"
 DESCRIPTION         = description
@@ -103,7 +103,7 @@ MINOR               = _version_minor
 MICRO               = _version_micro
 ISRELEASE           = _version_extra == ''
 VERSION             = __version__
-PROVIDES            = ["ddipy"]
+PROVIDES            = ["dtdipy"]
 REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "scipy (>=%s)" % SCIPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,

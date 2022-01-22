@@ -2,7 +2,7 @@
 
 
 from dipy.workflows.flow_runner import run_flow
-from ddipy.workflows.track_convert import TrackConvertFlow
+from dtdipy.workflows.track_convert import TrackConvertFlow
 
 if __name__ == "__main__":
     run_flow(TrackConvertFlow())

@@ -38,7 +38,7 @@ from setup_helpers import (install_scripts_bat, add_flag_checking,
 from version_helpers import get_comrec_build
 
 # Get version and release info, which is all stored in dipy/info.py
-info = read_vars_from(pjoin('ddipy', 'info.py'))
+info = read_vars_from(pjoin('dtdipy', 'info.py'))
 
 # We may just have imported setuptools, or we may have been exec'd from a
 # setuptools environment like pip
@@ -79,7 +79,7 @@ ext_kwargs = {
 # things, like building, rather than unconditionally in the setup.py import or
 # exec We may make tripwire versions of build_ext, build_py, install
 need_cython = True
-pybuilder = get_comrec_build('ddipy')
+pybuilder = get_comrec_build('dtdipy')
 # Cython is a dependency for building extensions, iff we don't have stamped
 # up pyx and c files.
 build_ext, need_cython = cyproc_exts(EXTS,
@@ -153,8 +153,8 @@ def main(**extra_args):
           version=info.VERSION,
           requires=info.REQUIRES,
           provides=info.PROVIDES,
-          packages=['ddipy',
-                    'ddipy.workflows'],
+          packages=['dtdipy',
+                    'dtdipy.workflows'],
 
           ext_modules=EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
@@ -164,11 +164,11 @@ def main(**extra_args):
           # all of python -- duplicating things into MANIFEST.in but this is
           # admittedly only a workaround to get things started -- not a
           # solution
-          #  package_data={'ddipy': [pjoin('data', 'files', '*')],
+          #  package_data={'dtdipy': [pjoin('data', 'files', '*')],
           #                },
           #  data_files=[('share/doc/dipy/examples',
           #               glob(pjoin('doc', 'examples', '*.py')))],
-          scripts=glob(pjoin('bin', 'ddipy_*')),
+          scripts=glob(pjoin('bin', 'dt_*')),
           cmdclass=cmdclass,
           **extra_args
           )
