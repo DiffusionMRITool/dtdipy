@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png_num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -25,8 +25,10 @@ Options:
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
+  --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
   --wc                     Use world coordinates.
   --png png_file           Output png file.
+  --png_num n              Output a series of png files with the azimuthal angle of camera rotation between 0 and 360. [Default: 1]
   --zoom zoom              Camera zoom factor. [Default: 1.0]
   --bgcolor r,g,b          Back ground color. [Default: 0,0,0]
   --frame                  Wireframe visualization.
@@ -103,6 +105,7 @@ def get_input_args(args):
     _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
+    _args['--angle'] = arg_values(args['--angle'], float, 2)
 
     # one input
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
@@ -111,6 +114,7 @@ def get_input_args(args):
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
+    _args['--png_num'] = arg_values(args['--png_num'], int, 1)[0]
 
     return _args
 
@@ -634,6 +638,10 @@ def main():
     scene.zoom(_args['--zoom'])
     scene.reset_clipping_range()
 
+    if args['--angle']:
+        scene.roll(_args['--angle'][0])
+        scene.elevation(_args['--angle'][1])
+
     if not _args['--png']:
 
         show_m.add_window_callback(win_callback)
@@ -642,9 +650,12 @@ def main():
 
     else:
 
-        window.record(scene, out_path=_args['--png'], size=(_args['--size']),
-                    reset_camera=False)
-
+        if _args['--png_num']==1:
+            window.record(scene, out_path=_args['--png'], size=(_args['--size']),
+                        reset_camera=False, path_numbering=False, n_frames=1)
+        else:
+            window.record(scene, out_path=os.path.splitext(_args['--png'])[0], size=(_args['--size']),
+                        reset_camera=False, path_numbering=True, n_frames=_args['--png_num'], az_ang=360/_args['--png_num'])
 
 
 
