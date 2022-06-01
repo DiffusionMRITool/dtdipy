@@ -69,7 +69,7 @@ from dipy.data import get_sphere
 
 
 def arg_list(list_input):
-    '''parse input list. Mutiple inputs split by space or comma.'''
+    """parse input list. Multiple inputs split by space or comma."""
 
     tmp_list = [re.split(r'[,\s]\s*', x) for x in list_input]
     out_list = [item for sublist in tmp_list for item in sublist]
@@ -77,7 +77,7 @@ def arg_list(list_input):
 
 
 def arg_values(value, typefunc, numberOfValues):
-    '''set arguments based using comma. If numberOfValues<0, it supports arbitrary number of inputs.'''
+    """set arguments based using comma. If numberOfValues<0, it supports arbitrary number of inputs."""
     value = value.strip()
     if value[0]=='(' and value[-1]==')':
         value = value[1:-1]
@@ -88,7 +88,7 @@ def arg_values(value, typefunc, numberOfValues):
 
 
 def get_input_args(args):
-    '''parse args'''
+    """parse args"""
 
     _args = args
 
@@ -116,7 +116,7 @@ def get_input_args(args):
 
 
 def set_box_on_shape(box, shape):
-    '''correct box values based on shape'''
+    """correct box values based on shape"""
 
     for i in range(3):
         if box[2*i]>box[2*i+1]:
@@ -126,7 +126,7 @@ def set_box_on_shape(box, shape):
 
 
 def update_visualbox(box, vbox):
-    '''update the visual vbox based on the given box'''
+    """update the visual vbox based on the given box"""
 
     # if box is default value, do not change vbox
     if box==[-1]*len(box):
@@ -151,7 +151,7 @@ def update_visualbox(box, vbox):
 
 
 def scene_add_tract(scene, track_file, affine, _args):
-    '''add a track file'''
+    """add a track file"""
 
     if _args['--image']:
         tg = load_tractogram(track_file, _args['--image'], bbox_valid_check=False)
@@ -181,7 +181,7 @@ def scene_add_tract(scene, track_file, affine, _args):
 
 
 def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
-    '''add a vtk file'''
+    """add a vtk file"""
 
     polyData = utlVTK.readPolydata(vtk_file)
 
@@ -241,7 +241,7 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
 
 
 def scene_add_image(scene, image_file, actor_dict, _args):
-    '''add a 3D image'''
+    """add a 3D image"""
 
     data, affine = load_nifti(image_file)
     shape = data.shape
@@ -288,7 +288,7 @@ def scene_add_image(scene, image_file, actor_dict, _args):
 
 
 def scene_add_sh(scene, sh_file, actor_dict, _args):
-    '''add a 4D SH image file'''
+    """add a 4D SH image file"""
 
     sh_img = nib.load(sh_file)
     sh = sh_img.get_fdata()
@@ -355,7 +355,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
 
 
 def scene_add_tensor(scene, tensor_file, actor_dict, _args):
-    '''add a 4D tensor image file with 6 dimension (lower triangle format)'''
+    """add a 4D tensor image file with 6 dimension (lower triangle format)"""
 
     tensor_img = nib.load(tensor_file)
     tensor = tensor_img.get_fdata()
@@ -403,7 +403,7 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
 
 
 def scene_add_ui(scene, _args, actor_dict, affine, shape):
-    '''add ui for image slice'''
+    """add ui for image slice"""
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1 if shape[0]>1 else 1,

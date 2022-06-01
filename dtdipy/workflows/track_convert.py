@@ -16,7 +16,7 @@ class TrackConvertFlow(Workflow):
 
     def run(self, input_files, out_track='out_track.trk', reference='same', vox=False, out_dir=''):
 
-        """ Workflow for creating a binary mask
+        """ Workflow for converting a track file.
 
         Parameters
         ----------
