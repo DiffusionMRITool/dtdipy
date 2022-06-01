@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Installation script for dipy package """
+""" Installation script for dtdipy package """
 
 import os
 import sys
@@ -105,7 +105,7 @@ if not sys.maxsize > 2 ** 32:
 
 flag_defines = msc_flag_defines if 'msc' in platform.python_compiler().lower() else gcc_flag_defines
 
-extbuilder = add_flag_checking(build_ext, flag_defines, 'dipy')
+extbuilder = add_flag_checking(build_ext, flag_defines, 'dtdipy')
 
 # Use ext builder to add np.get_include() at build time, not during setup.py
 # execution.
