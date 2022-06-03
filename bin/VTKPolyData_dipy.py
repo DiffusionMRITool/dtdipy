@@ -55,9 +55,9 @@ import os, re
 import numpy as np
 from docopt import docopt
 
-import utlVTK
-from utlVTK import vtk
-import utlDMRITool as utl
+import dt.utl.utlVTK as utlVTK
+from dt.utl.utlVTK import vtk
+import dt.utl.utlDMRITool as utl
 
 import nibabel as nib
 from fury import actor, window, ui
