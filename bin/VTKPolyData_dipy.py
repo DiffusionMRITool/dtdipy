@@ -313,7 +313,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     _args['sphere_dict'] = {'Low resolution': (sphere_low, B_low),
                 'High resolution': (sphere_high, B_high)}
 
-    scale = 0.5*_args['--sh-scale']
+    scale = _args['--sh-scale']
     norm = False
     colormap = None
     radial_scale = True
