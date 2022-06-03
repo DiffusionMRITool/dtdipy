@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png_num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -28,7 +28,7 @@ Options:
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
   --wc                     Use world coordinates.
   --png png_file           Output png file.
-  --png_num n              Output a series of png files with the azimuthal angle of camera rotation between 0 and 360. [Default: 1]
+  --png-num n              Output a series of png files with the azimuthal angle of camera rotation between 0 and 360. [Default: 1]
   --zoom zoom              Camera zoom factor. [Default: 1.0]
   --bgcolor r,g,b          Back ground color. [Default: 0,0,0]
   --frame                  Wireframe visualization.
@@ -44,7 +44,8 @@ VTKPolyData_dipy.py --vtk file1.vtk,file2.vtk --image im.nii.gz
 VTKPolyData_dipy.py --vtk file1.vtk --vtk file2.vtk --image im.nii.gz
 VTKPolyData_dipy.py --vtk "`/bin/ls *.vtk`" --image im.nii.gz
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --vtk2 tensor.vtk --image im.nii.gz
-VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png
+VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png --angle 0,0
+VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png --angle 90,0 --png-num 10
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --vtk2 tensor.vtk --image im.nii.gz --track "`/bin/ls *.trk`"
 
 Author(s): Jian Cheng (jian.cheng.1983@gmail.com)
@@ -68,6 +69,7 @@ from fury.utils import fix_winding_order
 from dipy.reconst.shm import sh_to_sf_matrix, order_from_ncoef
 from dipy.reconst.dti import from_lower_triangular, decompose_tensor
 from dipy.data import get_sphere
+
 
 
 def arg_list(list_input):
@@ -114,7 +116,7 @@ def get_input_args(args):
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
-    _args['--png_num'] = arg_values(args['--png_num'], int, 1)[0]
+    _args['--png-num'] = arg_values(args['--png-num'], int, 1)[0]
 
     return _args
 
@@ -650,12 +652,24 @@ def main():
 
     else:
 
-        if _args['--png_num']==1:
-            window.record(scene, out_path=_args['--png'], size=(_args['--size']),
+        ##########
+        ###NOTE: do not use fury.window.record, because it is slow and does not work well in singularity image.
+        ##########
+        #  if _args['--png-num']==1:
+        #      window.record(scene, out_path=_args['--png'], size=(_args['--size']),
+        #                  reset_camera=False, path_numbering=False, n_frames=1)
+        #  else:
+        #      window.record(scene, out_path=os.path.splitext(_args['--png'])[0], size=(_args['--size']),
+        #                  reset_camera=False, path_numbering=True, n_frames=_args['--png-num'], az_ang=360/_args['--png-num'])
+
+
+        if _args['--png-num']==1:
+            utlVTK.record_render(scene, out_path=_args['--png'], size=(_args['--size']),
                         reset_camera=False, path_numbering=False, n_frames=1)
         else:
-            window.record(scene, out_path=os.path.splitext(_args['--png'])[0], size=(_args['--size']),
-                        reset_camera=False, path_numbering=True, n_frames=_args['--png_num'], az_ang=360/_args['--png_num'])
+            utlVTK.record_render(scene, out_path=os.path.splitext(_args['--png'])[0], size=(_args['--size']),
+                        reset_camera=False, path_numbering=True, n_frames=_args['--png-num'], az_ang=360/_args['--png-num'])
+
 
 
 
