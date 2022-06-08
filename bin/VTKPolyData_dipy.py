@@ -61,7 +61,7 @@ from dt.utl.utlVTK import vtk
 import dt.utl.utlDMRITool as utl
 
 import nibabel as nib
-from fury import actor, window, ui
+from fury import actor, window, ui, colormap
 from dipy.io.image import load_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.io.vtk import load_vtk_streamlines
@@ -259,10 +259,16 @@ def scene_add_image(scene, image_file, actor_dict, _args):
         print('image shape=', shape)
         print('image affine=', affine)
 
+
+    lb, ub = data.min(), data.max()
+    lut = colormap.colormap_lookup_table(scale_range=(lb, ub), hue_range=(0,0), saturation_range=(0,0), value_range=(0,1))
+    # use SetRampToLinear to make it consistent with VTKPolyData.py
+    lut.SetRampToLinear()
+
     if not _args['--wc']:
-        actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4), value_range=_args['--image-range'])
+        actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4), value_range=_args['--image-range'], lookup_colormap=lut)
     else:
-        actor_dict['image_actor_z'] = actor.slicer(data, affine, value_range=_args['--image-range'])
+        actor_dict['image_actor_z'] = actor.slicer(data, affine, value_range=_args['--image-range'], lookup_colormap=lut)
 
     actor_dict['image_actor_z'].opacity(_args['--image-opacity'])
 
