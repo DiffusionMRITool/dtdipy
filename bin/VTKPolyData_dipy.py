@@ -293,11 +293,11 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     actor_dict['image_actor_y'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_y'].InterpolateOn()
     actor_dict['image_actor_z'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_z'].InterpolateOn()
 
-    if _args['--axes'][0]==1:
+    if _args['--axes'][0]==1 and shape[1]>1 and shape[2]>1:
         scene.add(actor_dict['image_actor_x'])
-    if _args['--axes'][1]==1:
+    if _args['--axes'][1]==1 and shape[0]>1 and shape[2]>1:
         scene.add(actor_dict['image_actor_y'])
-    if _args['--axes'][2]==1:
+    if _args['--axes'][2]==1 and shape[1]>1 and shape[0]>1:
         scene.add(actor_dict['image_actor_z'])
 
     return affine, shape
@@ -360,11 +360,11 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
                                 B_matrix=B_low)
     actor_dict['sh_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
-    if _args['--axes'][0]==1:
+    if _args['--axes'][0]==1 and grid_shape[1]>1 and grid_shape[2]>1:
         scene.add(actor_dict['sh_actor_x'])
-    if _args['--axes'][1]==1:
+    if _args['--axes'][1]==1 and grid_shape[0]>1 and grid_shape[2]>1:
         scene.add(actor_dict['sh_actor_y'])
-    if _args['--axes'][2]==1:
+    if _args['--axes'][2]==1 and grid_shape[1]>1 and grid_shape[0]>1:
         scene.add(actor_dict['sh_actor_z'])
 
     return sh_affine, grid_shape
@@ -408,11 +408,11 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
 
-    if _args['--axes'][0]==1:
+    if _args['--axes'][0]==1 and grid_shape[1]>1 and grid_shape[2]>1:
         scene.add(actor_dict['tensor_actor_x'])
-    if _args['--axes'][1]==1:
+    if _args['--axes'][1]==1 and grid_shape[0]>1 and grid_shape[2]>1:
         scene.add(actor_dict['tensor_actor_y'])
-    if _args['--axes'][2]==1:
+    if _args['--axes'][2]==1 and grid_shape[1]>1 and grid_shape[0]>1:
         scene.add(actor_dict['tensor_actor_z'])
 
     return tensor_affine, grid_shape
@@ -627,7 +627,7 @@ def main():
     show_m.initialize()
 
     # add ui for image slice
-    if _args['--image'] or _args['--sh'] or _args['--tensor']:
+    if (_args['--image'] or _args['--sh'] or _args['--tensor']) and min(shape)>1:
         panel = scene_add_ui(scene, _args, actor_dict, affine, shape)
 
 
