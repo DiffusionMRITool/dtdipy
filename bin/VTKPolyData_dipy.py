@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range range] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range range] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -15,7 +15,8 @@ Options:
   --image nifti_file       Input 3D nifti image file, or 4D RGB image file (3 channels in the 4th dimension).
   --sh sh_file             Input 4D nifti sphercial harmonic (SH) coefficient image file for ODF or EAP.
   --track f1...            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
-  --tensor tensor_file     Input 4D tensor file with 6 dimension (lower triangle [xx, yx, yy, zx, zy, zz]).
+  --tensor tensor_file     Input 4D tensor file with 6 dimension. Set --tensor-ft for different format of tensor image.
+
   --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
@@ -24,6 +25,7 @@ Options:
   --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
+  --tensor-ft format       Input 4D tensor format. (UT: upper triangle as default [xx, xy, xz, yy, yz, zz], LT: lower triangle [xx, yx, yy, zx, zy, zz], DF: diagonal first [xx, yy, zz, xy, xz, yz] ). [Default: UT]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
@@ -59,6 +61,7 @@ from docopt import docopt
 import dt.utl.utlVTK as utlVTK
 from dt.utl.utlVTK import vtk
 import dt.utl.utlDMRITool as utl
+from dt.utl.utlTensor import from_upper_triangular, from_lower_triangular, from_diagonal_first
 
 import nibabel as nib
 from fury import actor, window, ui, colormap
@@ -68,7 +71,7 @@ from dipy.io.vtk import load_vtk_streamlines
 from dipy.io.dpy import Dpy
 from fury.utils import fix_winding_order
 from dipy.reconst.shm import sh_to_sf_matrix, order_from_ncoef
-from dipy.reconst.dti import from_lower_triangular, decompose_tensor
+from dipy.reconst.dti import decompose_tensor
 from dipy.data import get_sphere
 
 
@@ -117,6 +120,7 @@ def get_input_args(args):
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
     _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1)[0]
     _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1)[0]
+    _args['--tensor-ft'] = arg_values(args['--tensor-ft'], str, 1)[0]
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
@@ -386,8 +390,14 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     affine = tensor_affine if _args['--wc'] else np.eye(4)
     grid_shape = tensor.shape[:-1]
 
-    evals, evecs = decompose_tensor(from_lower_triangular(np.asarray(tensor)),
-                                    min_diffusivity=0)
+    if _args['--tensor-ft'].upper() == "UT":
+        evals, evecs = decompose_tensor(from_upper_triangular(np.asarray(tensor)),  min_diffusivity=0)
+    elif _args['--tensor-ft'].upper() == "LT":
+        evals, evecs = decompose_tensor(from_lower_triangular(np.asarray(tensor)),  min_diffusivity=0)
+    elif _args['--tensor-ft'].upper() == "DF":
+        evals, evecs = decompose_tensor(from_diagonal_first(np.asarray(tensor)),  min_diffusivity=0)
+    else:
+        raise ValueError("Wrong input value of _args['--tensor-ft']", _args['--tensor-ft'])
 
 
     # Do not normalize eigenvalues by default
