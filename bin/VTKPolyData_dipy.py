@@ -20,7 +20,7 @@ Options:
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
-  --image-range range      Lowest and highest contrast value for --image (3d image). If not set, use the minimal and maximal values in the image.  [Default: -1,-1]
+  --image-range range      Lowest and highest contrast value for --image (3d image). [lower, upper]. If not set, use the minimal and maximal values in the image.
   --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
@@ -83,13 +83,15 @@ def arg_list(list_input):
 
 def arg_values(value, typefunc, numberOfValues):
     """set arguments based using comma. If numberOfValues<0, it supports arbitrary number of inputs."""
-    value = value.strip()
-    if value[0]=='(' and value[-1]==')':
-        value = value[1:-1]
-    values = value.split(',')
-    if numberOfValues > 0 and len(values) != numberOfValues:
-        raise("wrong number of input values")
-    return list(map(typefunc, values))
+    if value:
+        value = value.strip()
+        if value[0]=='(' and value[-1]==')':
+            value = value[1:-1]
+        values = value.split(',')
+        if numberOfValues > 0 and len(values) != numberOfValues:
+            raise ValueError("wrong number of input values, len(", values, ") != ", numberOfValues)
+        return list(map(typefunc, values))
+    return None
 
 
 def get_input_args(args):
@@ -98,9 +100,9 @@ def get_input_args(args):
     _args = args
 
     #  split by comma or space, arbitrary number of inputs
-    _args['--vtk'] = arg_list(args['--vtk']) if args['--vtk'] else args['--vtk']
-    _args['--vtk2'] = arg_list(args['--vtk2']) if args['--vtk2'] else args['--vtk2']
-    _args['--track'] = arg_list(args['--track']) if args['--track'] else args['--track']
+    _args['--vtk'] = arg_list(args['--vtk'])
+    _args['--vtk2'] = arg_list(args['--vtk2'])
+    _args['--track'] = arg_list(args['--track'])
 
     #  split by comma, given number of inputs
     _args['--axes'] = arg_values(args['--axes'], float, 3)
@@ -110,8 +112,6 @@ def get_input_args(args):
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
     _args['--angle'] = arg_values(args['--angle'], float, 2)
     _args['--image-range'] = arg_values(args['--image-range'], float, 2)
-    if _args['--image-range'][0]==-1 and _args['--image-range'][1]==-1:
-        _args['--image-range'] = None
 
     # one input
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
@@ -264,8 +264,8 @@ def scene_add_image(scene, image_file, actor_dict, _args):
             raise ValueError("For a RGB image, the 4th dimension should be 3, while shape = ", shape)
 
     lb, ub = data.min(), data.max()
-    vr0 = _args['--image-range'][0] if _args['--image-range'] and _args['--image-range'][0] != -1 else lb
-    vr1 = _args['--image-range'][1] if _args['--image-range'] and _args['--image-range'][1] != -1 else ub
+    vr0 = _args['--image-range'][0] if _args['--image-range'] else lb
+    vr1 = _args['--image-range'][1] if _args['--image-range'] else ub
 
     lut = colormap.colormap_lookup_table(scale_range=(vr0, vr1), hue_range=(0,0), saturation_range=(0,0), value_range=(0,1))
     # use SetRampToLinear to make it consistent with VTKPolyData.py
@@ -611,7 +611,7 @@ def main():
             print("Warning: sh shape is different from image shape. sh_shape=", sh_shape, ", image shape=", shape)
             shape = min(shape, sh_shape)
         if _args['--image'] and np.linalg.norm(sh_affine-affine)>1e-5:
-            print("Warning: sh affine is different from image affine. sh_affne=", sh_affine, ", image affine=", affine)
+            print("Warning: sh affine is different from image affine. sh_affne=", sh_affine, "\n, image affine=", affine)
         if not _args['--image']:
             affine, shape = sh_affine, sh_shape
 
