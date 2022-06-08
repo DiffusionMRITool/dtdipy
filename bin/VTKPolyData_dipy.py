@@ -21,7 +21,7 @@ Options:
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
   --image-range range      Lowest and highest contrast value for --image. If not set, use the minimal and maximal values in the image.  [Default: -1,-1]
-  --image-opacity opa      Slice opacity for --image. [Default: 0.8]
+  --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
