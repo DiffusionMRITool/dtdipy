@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range range] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -20,6 +20,7 @@ Options:
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
+  --image-range range      Lowest and highest contrast value for --image. If not set, use the minimal and maximal values in the image.  [Default: -1,-1]
   --image-opacity opa      Slice opacity for --image. [Default: 0.8]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
@@ -108,6 +109,9 @@ def get_input_args(args):
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
     _args['--angle'] = arg_values(args['--angle'], float, 2)
+    _args['--image-range'] = arg_values(args['--image-range'], float, 2)
+    if _args['--image-range'][0]==-1 and _args['--image-range'][1]==-1:
+        _args['--image-range'] = None
 
     # one input
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
@@ -228,7 +232,7 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
         lut.SetTableRange(valueRange[0], valueRange[1])
         if is_vtk2:
             #  for tensors colored by directions
-            lut.SetHueRange(0.0,1.0)
+            lut.SetHueRange(0.0, 1.0)
         else:
             lut.SetHueRange(0.6667, 0)
         #  lut.SetHueRange(args.hue_range[0], args.hue_range[1])
@@ -256,9 +260,9 @@ def scene_add_image(scene, image_file, actor_dict, _args):
         print('image affine=', affine)
 
     if not _args['--wc']:
-        actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4))
+        actor_dict['image_actor_z'] = actor.slicer(data, affine=np.eye(4), value_range=_args['--image-range'])
     else:
-        actor_dict['image_actor_z'] = actor.slicer(data, affine)
+        actor_dict['image_actor_z'] = actor.slicer(data, affine, value_range=_args['--image-range'])
 
     actor_dict['image_actor_z'].opacity(_args['--image-opacity'])
 
