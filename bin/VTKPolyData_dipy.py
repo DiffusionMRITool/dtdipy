@@ -4,7 +4,7 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range range] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range r1,r2] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -21,7 +21,7 @@ Options:
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
-  --image-range range      Lowest and highest contrast value for --image (3d image). [lower, upper]. If not set, use the minimal and maximal values in the image.
+  --image-range r1,r2      Lowest and highest contrast value for --image (3d image). [lower, upper]. If not set, use the minimal and maximal values in the image. [Default: -1,-1]
   --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
@@ -268,8 +268,11 @@ def scene_add_image(scene, image_file, actor_dict, _args):
             raise ValueError("For a RGB image, the 4th dimension should be 3, while shape = ", shape)
 
     lb, ub = data.min(), data.max()
-    vr0 = _args['--image-range'][0] if _args['--image-range'] else lb
-    vr1 = _args['--image-range'][1] if _args['--image-range'] else ub
+    vr0 = _args['--image-range'][0] if _args['--image-range'] and _args['--image-range'][0] != -1 else lb
+    vr1 = _args['--image-range'][1] if _args['--image-range'] and _args['--image-range'][1] != -1 else ub
+    if _args['--verbose']:
+        print("image (min, max) = ", lb, ub)
+        print("image viewer (vr0, vr1) = ", vr0, vr1)
 
     lut = colormap.colormap_lookup_table(scale_range=(vr0, vr1), hue_range=(0,0), saturation_range=(0,0), value_range=(0,1))
     # use SetRampToLinear to make it consistent with VTKPolyData.py
