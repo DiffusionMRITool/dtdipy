@@ -15,17 +15,17 @@ Options:
   --image nifti_file       Input 3D nifti image file, or 4D RGB image file (3 channels in the 4th dimension).
   --sh sh_file             Input 4D nifti sphercial harmonic (SH) coefficient image file for ODF or EAP.
   --track f1...            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
-  --tensor tensor_file     Input 4D tensor file with 6 dimension. Set --tensor-ft for different format of tensor image.
+  --tensor tensor_file     Input 4D tensor file with 6 dimension. Use FA*eigenVector1 to color the glyph. Set --tensor-ft for different format of tensor image.
 
   --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
-  --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
+  --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. [lower, upper]. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
   --image-range r1,r2      Lowest and highest contrast value for --image (3d image). [lower, upper]. If not set, use the minimal and maximal values in the image. [Default: -1,-1]
   --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
-  --tensor-ft format       Input 4D tensor format. (UT: upper triangle as default [xx, xy, xz, yy, yz, zz], LT: lower triangle [xx, yx, yy, zx, zy, zz], DF: diagonal first [xx, yy, zz, xy, xz, yz] ). [Default: UT]
+  --tensor-ft format       Input 4D tensor format. (UT: upper triangle (dmritool, fsl) as default [xx, xy, xz, yy, yz, zz], LT: lower triangle (dipy, trackvis) [xx, yx, yy, zx, zy, zz], DF: diagonal first (mrtrix, camino, AFQ) [xx, yy, zz, xy, xz, yz] ). [Default: UT]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
@@ -43,6 +43,8 @@ Options:
   --version                Show version.
 
 Examples:
+VTKPolyData_dipy.py --vtk file.vtk --image im.nii.gz --sh odf.nii.gz --track fiber.trk
+VTKPolyData_dipy.py --vtk file.vtk --image im.nii.gz --tensor tensor.nii.gz --track fiber.trk
 VTKPolyData_dipy.py --vtk file1.vtk,file2.vtk --image im.nii.gz
 VTKPolyData_dipy.py --vtk file1.vtk --vtk file2.vtk --image im.nii.gz
 VTKPolyData_dipy.py --vtk "`/bin/ls *.vtk`" --image im.nii.gz
@@ -612,7 +614,7 @@ def main():
             print("Warning: tensor shape is different from image shape. tensor_shape=", tensor_shape, ", image shape=", shape)
             shape = min(shape, tensor_shape)
         if _args['--image'] and np.linalg.norm(tensor_affine-affine)>1e-5:
-            print("Warning: tensor affine is different from image affine. tensor_affne=", tensor_affine, ", image affine=", affine)
+            print("Warning: tensor affine is different from image affine. tensor_affne=", tensor_affine, ",\n image affine=", affine)
         if not _args['--image']:
             affine, shape = tensor_affine, tensor_shape
 
@@ -624,7 +626,7 @@ def main():
             print("Warning: sh shape is different from image shape. sh_shape=", sh_shape, ", image shape=", shape)
             shape = min(shape, sh_shape)
         if _args['--image'] and np.linalg.norm(sh_affine-affine)>1e-5:
-            print("Warning: sh affine is different from image affine. sh_affne=", sh_affine, "\n, image affine=", affine)
+            print("Warning: sh affine is different from image affine. sh_affne=", sh_affine, ",\n image affine=", affine)
         if not _args['--image']:
             affine, shape = sh_affine, sh_shape
 
