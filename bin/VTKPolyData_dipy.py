@@ -572,7 +572,8 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
 
 def main():
 
-    args = docopt(utl.app_doc(__doc__), version='1.0')
+    _doc = utl.app_doc(__doc__)
+    args = docopt(_doc, version='1.0')
 
     if (args['--verbose']):
         print(args)
@@ -583,7 +584,8 @@ def main():
         print('_args=',_args)
 
     if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track']:
-        raise("need inputs for --vtk, --vtk2, --image, --sh, --tensor")
+        print(_doc)
+        raise ValueError("Need inputs for --vtk, --vtk2, --image, --sh, --tensor")
 
     affine=np.eye(4)
     shape=[]
