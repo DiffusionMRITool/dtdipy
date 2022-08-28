@@ -26,7 +26,7 @@ Options:
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
   --sh-scale scale         SH radial scale for --sh. [Default: 1.0]
   --tensor-ft format       Input 4D tensor format. (UT: upper triangle (dmritool, fsl) as default [xx, xy, xz, yy, yz, zz], LT: lower triangle (dipy, trackvis) [xx, yx, yy, zx, zy, zz], DF: diagonal first (mrtrix, camino, AFQ) [xx, yy, zz, xy, xz, yz] ). [Default: UT]
-  --tensor-scale scale     Tensor scale for --tensor. [Default: 200]
+  --tensor-scale scale     Tensor scale for --tensor. [Default: 400]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
   --wc                     Use world coordinates.
