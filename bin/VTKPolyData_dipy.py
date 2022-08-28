@@ -17,7 +17,7 @@ Options:
   --track f1...            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension. Use FA*eigenVector1 to color the glyph. Set --tensor-ft for different format of tensor image.
 
-  --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. Default 1,1,1 to show 3 axes, -1,1,1 to show y z axes.  [Default: 1,1,1]
+  --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. -2 means do not show that axis, -1 means show that axis (initial x/y/z in the middle). Default -2,-2,-2 to show 3 axes (with the initial position in the middle of the image), -2,18,30 to show y z axes (with the initial position at y=18,z=30). [Default: -1,-1,-1]
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. [lower, upper]. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
@@ -308,11 +308,11 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     actor_dict['image_actor_y'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_y'].InterpolateOn()
     actor_dict['image_actor_z'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_z'].InterpolateOn()
 
-    if _args['--axes'][0]==1 and shape[1]>1 and shape[2]>1:
+    if _args['--axes'][0]>=-1 and shape[1]>1 and shape[2]>1:
         scene.add(actor_dict['image_actor_x'])
-    if _args['--axes'][1]==1 and shape[0]>1 and shape[2]>1:
+    if _args['--axes'][1]>=-1 and shape[0]>1 and shape[2]>1:
         scene.add(actor_dict['image_actor_y'])
-    if _args['--axes'][2]==1 and shape[1]>1 and shape[0]>1:
+    if _args['--axes'][2]>=-1 and shape[1]>1 and shape[0]>1:
         scene.add(actor_dict['image_actor_z'])
 
     return affine, shape
@@ -375,11 +375,11 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
                                 B_matrix=B_low)
     actor_dict['sh_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
-    if _args['--axes'][0]==1 and grid_shape[1]>1 and grid_shape[2]>1:
+    if _args['--axes'][0]>=-1 and grid_shape[1]>1 and grid_shape[2]>1:
         scene.add(actor_dict['sh_actor_x'])
-    if _args['--axes'][1]==1 and grid_shape[0]>1 and grid_shape[2]>1:
+    if _args['--axes'][1]>=-1 and grid_shape[0]>1 and grid_shape[2]>1:
         scene.add(actor_dict['sh_actor_y'])
-    if _args['--axes'][2]==1 and grid_shape[1]>1 and grid_shape[0]>1:
+    if _args['--axes'][2]>=-1 and grid_shape[1]>1 and grid_shape[0]>1:
         scene.add(actor_dict['sh_actor_z'])
 
     return sh_affine, grid_shape
@@ -429,11 +429,11 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
 
-    if _args['--axes'][0]==1 and grid_shape[1]>1 and grid_shape[2]>1:
+    if _args['--axes'][0]>=-1 and grid_shape[1]>1 and grid_shape[2]>1:
         scene.add(actor_dict['tensor_actor_x'])
-    if _args['--axes'][1]==1 and grid_shape[0]>1 and grid_shape[2]>1:
+    if _args['--axes'][1]>=-1 and grid_shape[0]>1 and grid_shape[2]>1:
         scene.add(actor_dict['tensor_actor_y'])
-    if _args['--axes'][2]==1 and grid_shape[1]>1 and grid_shape[0]>1:
+    if _args['--axes'][2]>=-1 and grid_shape[1]>1 and grid_shape[0]>1:
         scene.add(actor_dict['tensor_actor_z'])
 
     return tensor_affine, grid_shape
@@ -444,19 +444,19 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1 if shape[0]>1 else 1,
-                                    initial_value=shape[0] / 2,
+                                    initial_value=_args['--axes'][0] if _args['--axes'][0]>=0 else shape[0] / 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
     line_slider_y = ui.LineSlider2D(min_value=0,
                                     max_value=shape[1] - 1 if shape[1]>1 else 1,
-                                    initial_value=shape[1] / 2,
+                                    initial_value=_args['--axes'][1] if _args['--axes'][1]>=0 else shape[1] / 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1 if shape[2]>1 else 1,
-                                    initial_value=shape[2] / 2,
+                                    initial_value=_args['--axes'][2] if _args['--axes'][2]>=0 else shape[2] / 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
@@ -538,7 +538,7 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
         return label
 
 
-    num = int(_args['--axes'][0]==1)+ int(_args['--axes'][1]==1) + int(_args['--axes'][2]==1)
+    num = int(_args['--axes'][0]>=-1)+ int(_args['--axes'][1]>=-1) + int(_args['--axes'][2]>=-1)
     bgc = _args['--bgcolor']
     panel = ui.Panel2D(size=(300, 50*(num+1)),
                     color=(1-bgc[0], 1-bgc[1], 1-bgc[2]),
@@ -547,20 +547,20 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
     panel.center = (_args['--size'][0]-200, 120)
 
     high_1 = 0.6
-    if _args['--axes'][0]==1:
+    if _args['--axes'][0]>=-1:
         line_slider_label_x = build_label(text="X Slice")
         panel.add_element(line_slider_label_x, (0.1, high_1 if num==1 else 0.75))
         panel.add_element(line_slider_x, (0.38, high_1 if num==1 else 0.75))
-    if _args['--axes'][1]==1:
+    if _args['--axes'][1]>=-1:
         line_slider_label_y = build_label(text="Y Slice")
         panel.add_element(line_slider_label_y, (0.1, high_1 if num==1 else 0.55))
         panel.add_element(line_slider_y, (0.38, high_1 if num==1 else 0.55))
-    if _args['--axes'][2]==1:
+    if _args['--axes'][2]>=-1:
         line_slider_label_z = build_label(text="Z Slice")
         panel.add_element(line_slider_label_z, (0.1, high_1 if num==1 else 0.35))
         panel.add_element(line_slider_z, (0.38, high_1 if num==1 else 0.35))
 
-    if _args['--axes'][0]==1 or _args['--axes'][1]==1 or _args['--axes'][2]==1:
+    if _args['--axes'][0]>=-1 or _args['--axes'][1]>=-1 or _args['--axes'][2]>=-1:
         opacity_slider_label = build_label(text="Opacity")
         panel.add_element(opacity_slider_label, (0.1, 0.15))
         panel.add_element(opacity_slider, (0.38, 0.15))
