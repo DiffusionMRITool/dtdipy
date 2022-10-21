@@ -288,21 +288,15 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     actor_dict['image_actor_z'].opacity(_args['--image-opacity'])
 
     actor_dict['image_actor_x'] = actor_dict['image_actor_z'].copy()
-    x_midpoint = int(np.round(shape[0] / 2))
-    actor_dict['image_actor_x'].display_extent(x_midpoint,
-                                x_midpoint, 0,
-                                shape[1] - 1,
-                                0,
-                                shape[2] - 1)
+    x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else shape[0] // 2))
+    actor_dict['image_actor_x'].display_extent(x_initpoint, x_initpoint, 0, shape[1] - 1, 0, shape[2] - 1)
 
     actor_dict['image_actor_y'] = actor_dict['image_actor_z'].copy()
-    y_midpoint = int(np.round(shape[1] / 2))
-    actor_dict['image_actor_y'].display_extent(0,
-                                shape[0] - 1,
-                                y_midpoint,
-                                y_midpoint,
-                                0,
-                                shape[2] - 1)
+    y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else shape[1] // 2))
+    actor_dict['image_actor_y'].display_extent(0, shape[0] - 1, y_initpoint, y_initpoint, 0, shape[2] - 1)
+
+    z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else shape[2] // 2))
+    actor_dict['image_actor_z'].display_extent(0, shape[0] - 1, 0, shape[1] - 1, z_initpoint, z_initpoint)
 
     actor_dict['image_actor_x'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_x'].InterpolateOn()
     actor_dict['image_actor_y'].InterpolateOff() if _args['--ni'] else actor_dict['image_actor_y'].InterpolateOn()
@@ -346,7 +340,8 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     global_cm = False
 
     # SH (ODF/EAP) slicer for axial slice
-    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
+    z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
+    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
     update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_z'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
@@ -356,7 +351,8 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     actor_dict['sh_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # SH slicer for coronal slice
-    vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
+    y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
+    vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_y'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
@@ -366,7 +362,8 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     actor_dict['sh_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # SH slicer for sagittal slice
-    vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
+    x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
+    vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
     actor_dict['sh_actor_x'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
@@ -413,17 +410,20 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     scale = _args['--tensor-scale']
     opacity = _args['--tensor-opacity']
 
-    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, grid_shape[2]//2, grid_shape[2]//2]
+    z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
+    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
     update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
-    vbox = [0, grid_shape[0] - 1, grid_shape[1]//2, grid_shape[1]//2, 0, grid_shape[2] - 1]
+    y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
+    vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_y'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
-    vbox = [grid_shape[0]//2, grid_shape[0]//2, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
+    x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
+    vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
     actor_dict['tensor_actor_x'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
@@ -444,19 +444,19 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1 if shape[0]>1 else 1,
-                                    initial_value=_args['--axes'][0] if _args['--axes'][0]>=0 else shape[0] / 2,
+                                    initial_value=_args['--axes'][0] if _args['--axes'][0]>=0 else shape[0] // 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
     line_slider_y = ui.LineSlider2D(min_value=0,
                                     max_value=shape[1] - 1 if shape[1]>1 else 1,
-                                    initial_value=_args['--axes'][1] if _args['--axes'][1]>=0 else shape[1] / 2,
+                                    initial_value=_args['--axes'][1] if _args['--axes'][1]>=0 else shape[1] // 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1 if shape[2]>1 else 1,
-                                    initial_value=_args['--axes'][2] if _args['--axes'][2]>=0 else shape[2] / 2,
+                                    initial_value=_args['--axes'][2] if _args['--axes'][2]>=0 else shape[2] // 2,
                                     text_template="{value:.0f}",
                                     length=140)
 
