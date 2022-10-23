@@ -266,8 +266,11 @@ def scene_add_image(scene, image_file, actor_dict, _args):
         print('image affine=', affine)
 
     if len(shape)==4:
-        if shape[3] != 3:
-            raise ValueError("For a RGB image, the 4th dimension should be 3, while shape = ", shape)
+        if shape[3] != 3 and shape[3] != 1:
+            raise ValueError("If the input image has 4 dimensions, then the 4th dimension should be 3 (for a RGB image), or 1 (for a 3D image). while shape = ", shape)
+        if shape[3] == 1:
+            data = data.squeeze(axis=3)
+            shape = (shape[0], shape[1], shape[2])
 
     lb, ub = data.min(), data.max()
     vr0 = _args['--image-range'][0] if _args['--image-range'] and _args['--image-range'][0] != -1 else lb
@@ -319,7 +322,17 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     sh = sh_img.get_fdata()
     sh_affine = sh_img.affine
     affine = sh_affine if _args['--wc'] else np.eye(4)
-    grid_shape = sh.shape[:-1]
+
+    sh_shape = sh.shape
+    if len(sh_shape)==5:
+        if sh_shape[3] == 1:
+            sh = sh.squeeze(axis=3)
+            grid_shape = (sh_shape[0], sh_shape[1], sh_shape[2])
+        else:
+            raise ValueError("If the input SH image has 5 dimensions, then the 4th dimension should be 1. while shape = ", sh_shape)
+    else:
+        grid_shape = sh.shape[:-1]
+
     sh_order = order_from_ncoef(sh.shape[-1])
 
     sphere_low = get_sphere('repulsion100')
@@ -388,9 +401,17 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     tensor_img = nib.load(tensor_file)
     tensor = tensor_img.get_fdata()
     tensor_affine = tensor_img.affine
-
     affine = tensor_affine if _args['--wc'] else np.eye(4)
-    grid_shape = tensor.shape[:-1]
+
+    tensor_shape = tensor.shape
+    if len(tensor_shape)==5:
+        if tensor_shape[3] == 1:
+            tensor = tensor.squeeze(axis=3)
+            grid_shape = (tensor_shape[0], tensor_shape[1], tensor_shape[2])
+        else:
+            raise ValueError("If the input tensor image has 5 dimensions, then the 4th dimension should be 1. while shape = ", tensor_shape)
+    else:
+        grid_shape = tensor.shape[:-1]
 
     if _args['--tensor-ft'].upper() == "UT":
         evals, evecs = decompose_tensor(from_upper_triangular(np.asarray(tensor)),  min_diffusivity=0)
