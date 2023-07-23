@@ -4,7 +4,13 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1] [--image-opacity opa] [--image-range r1,r2] [--sh-scale scale] [--sh-opacity opa] [--tensor-scale scale] [--tensor-opacity opa] [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--scalar-range r1,r2] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--no-normal] [--ni] [--angle azimuth,elevation]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--peak peak_file...]
+            [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1]
+            [--image-opacity opa] [--image-range r1,r2] [--scalar-range r1,r2] [--ni]
+            [--sh-scale scale] [--sh-opacity opa] [--no-normal]
+            [--tensor-scale scale] [--tensor-opacity opa]
+            [--peak-scale scale] [--peak-opacity opacity] [--peak-color r,g,b]
+            [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -16,6 +22,7 @@ Options:
   --sh sh_file             Input 4D nifti sphercial harmonic (SH) coefficient image file for ODF or EAP.
   --track f1...            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension. Use FA*eigenVector1 to color the glyph. Set --tensor-ft for different format of tensor image.
+  --peak peak_file...      Input 4D nifti peak image file (X,Y,Z,N). Multiple inputs. Each voxel has a peak vector like (x1,y1,z1,x2,y2,z2,...).
 
   --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. -2 means do not show that axis, -1 means show that axis (initial x/y/z in the middle). Default -2,-2,-2 to show 3 axes (with the initial position in the middle of the image), -2,18,30 to show y z axes (with the initial position at y=18,z=30). [Default: -1,-1,-1]
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
@@ -28,6 +35,9 @@ Options:
   --tensor-ft format       Input 4D tensor format. (UT: upper triangle (dmritool, fsl) as default [xx, xy, xz, yy, yz, zz], LT: lower triangle (dipy, trackvis) [xx, yx, yy, zx, zy, zz], DF: diagonal first (mrtrix, camino, AFQ) [xx, yy, zz, xy, xz, yz] ). [Default: UT]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 400]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
+  --peak-scale scale       Peak scale for --peak. [Default: 0.5]
+  --peak-opacity opa       Peak glyph opacity for --peak. [Default: 1.0]
+  --peak-color r,g,b       Peak color opacity for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
   --wc                     Use world coordinates.
   --png png_file           Output png file.
@@ -108,6 +118,7 @@ def get_input_args(args):
     _args['--vtk'] = arg_list(args['--vtk'])
     _args['--vtk2'] = arg_list(args['--vtk2'])
     _args['--track'] = arg_list(args['--track'])
+    _args['--peak'] = arg_list(args['--peak'])
 
     #  split by comma, given number of inputs
     _args['--axes'] = arg_values(args['--axes'], float, 3)
@@ -115,6 +126,7 @@ def get_input_args(args):
     _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
     _args['--size'] = arg_values(args['--size'], int, 2)
     _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
+    _args['--peak-color'] = arg_values(args['--peak-color'], float, 3)
     _args['--angle'] = arg_values(args['--angle'], float, 2)
     _args['--image-range'] = arg_values(args['--image-range'], float, 2)
 
@@ -125,6 +137,8 @@ def get_input_args(args):
     _args['--tensor-ft'] = arg_values(args['--tensor-ft'], str, 1)[0]
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
+    _args['--peak-opacity'] = arg_values(args['--peak-opacity'], float, 1)[0]
+    _args['--peak-scale'] = arg_values(args['--peak-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
     _args['--png-num'] = arg_values(args['--png-num'], int, 1)[0]
 
@@ -395,6 +409,61 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     return sh_affine, grid_shape
 
 
+def scene_add_peak(scene, peak_file, actor_dict, _args):
+    """add a 4D peak image file"""
+
+    peak_img = nib.load(peak_file)
+    peak = peak_img.get_fdata()
+    peak_affine = peak_img.affine
+    affine = peak_affine if _args['--wc'] else np.eye(4)
+
+    peak_shape = peak.shape
+    if len(peak_shape)==5:
+        if peak_shape[3] == 1:
+            peak = peak.squeeze(axis=3)
+            grid_shape = (peak_shape[0], peak_shape[1], peak_shape[2])
+        else:
+            raise ValueError("If the input peak image has 5 dimensions, then the 4th dimension should be 1. while shape = ", peak_shape)
+    else:
+        grid_shape = peak.shape[:-1]
+
+    peak = peak.reshape(*grid_shape, -1, 3)
+
+    scale = _args['--peak-scale']
+    opacity = _args['--peak-opacity']
+    color = _args['--peak-color']
+
+    # peak slicer for axial slice
+    z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
+    vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
+    update_visualbox(_args['--box'], vbox)
+    actor_dict['peak_actor_z'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+
+    # peak slicer for coronal slice
+    y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
+    vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
+    update_visualbox(_args['--box'], vbox)
+    actor_dict['peak_actor_y'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+
+    # peak slicer for sagittal slice
+    x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
+    vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
+    update_visualbox(_args['--box'], vbox)
+    actor_dict['peak_actor_x'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+
+    if _args['--axes'][0]>=-1 and grid_shape[1]>1 and grid_shape[2]>1:
+        scene.add(actor_dict['peak_actor_x'])
+    if _args['--axes'][1]>=-1 and grid_shape[0]>1 and grid_shape[2]>1:
+        scene.add(actor_dict['peak_actor_y'])
+    if _args['--axes'][2]>=-1 and grid_shape[1]>1 and grid_shape[0]>1:
+        scene.add(actor_dict['peak_actor_z'])
+
+    return peak_affine, grid_shape
+
+
 def scene_add_tensor(scene, tensor_file, actor_dict, _args):
     """add a 4D tensor image file with 6 dimension (lower triangle format)"""
 
@@ -497,6 +566,8 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
             actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
             actor_dict['sh_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+        if _args['--peak']:
+            actor_dict['peak_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_slice_y(slider):
         y = int(np.round(slider.value))
@@ -508,6 +579,8 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
             actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
             actor_dict['sh_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+        if _args['--peak']:
+            actor_dict['peak_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_slice_z(slider):
         z = int(np.round(slider.value))
@@ -519,6 +592,8 @@ def scene_add_ui(scene, _args, actor_dict, affine, shape):
             actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
         if _args['--sh']:
             actor_dict['sh_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
+        if _args['--peak']:
+            actor_dict['peak_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     def change_opacity(slider):
         _args['--image-opacity'] = slider.value
@@ -604,9 +679,9 @@ def main():
     if (args['--verbose']):
         print('_args=',_args)
 
-    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track']:
+    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track'] and not _args['--peak']:
         print(_doc)
-        raise ValueError("Need inputs for --vtk, --vtk2, --image, --sh, --tensor")
+        raise ValueError("Need inputs for --vtk, --vtk2, --image, --sh, --tensor, --peak")
 
     affine=np.eye(4)
     shape=[]
@@ -653,11 +728,25 @@ def main():
         if not _args['--image']:
             affine, shape = sh_affine, sh_shape
 
+    #  add a peak file
+    if _args['--peak']:
+        for tf in _args['--peak']:
+            peak_affine, peak_shape = scene_add_peak(scene, tf, actor_dict, _args)
+
+            if _args['--image'] and peak_shape!=shape:
+                print("Warning: peak shape is different from image shape. peak_shape=", peak_shape, ", image shape=", shape)
+                shape = min(shape, peak_shape)
+            if _args['--image'] and np.linalg.norm(peak_affine-affine)>1e-5:
+                print("Warning: peak affine is different from image affine. peak_affne=", peak_affine, ",\n image affine=", affine)
+            if not _args['--image']:
+                affine, shape = peak_affine, peak_shape
+
+
     if _args['--verbose']:
         print('shape=', shape)
         print('affine=', affine)
 
-    if _args['--image'] or _args['--tensor'] or _args['--sh']:
+    if _args['--image'] or _args['--tensor'] or _args['--sh'] or _args['--peak']:
         set_box_on_shape(_args['--box'], shape)
         if _args['--verbose']:
             print('set box=', _args['--box'])
@@ -671,7 +760,7 @@ def main():
     show_m.initialize()
 
     # add ui for image slice
-    if (_args['--image'] or _args['--sh'] or _args['--tensor']) and min(shape)>1:
+    if (_args['--image'] or _args['--sh'] or _args['--tensor'] or _args['--peak']) and min(shape)>1:
         panel = scene_add_ui(scene, _args, actor_dict, affine, shape)
 
 
