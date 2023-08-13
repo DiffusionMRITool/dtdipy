@@ -10,6 +10,7 @@ Usage:
             [--image-opacity opa] [--image-range r1,r2] [--scalar-range r1,r2] [--ni]
             [--sh-scale scale] [--sh-opacity opa] [--no-normal]
             [--tensor-scale scale] [--tensor-opacity opa]
+            [--track-opacity opa] [--track-radius radius]
             [--peak-scale scale] [--peak-opacity opacity] [--peak-color r,g,b]
             [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
@@ -37,6 +38,8 @@ Options:
   --tensor-ft format       Input 4D tensor format. (UT: upper triangle (dmritool, fsl) as default [xx, xy, xz, yy, yz, zz], LT: lower triangle (dipy, trackvis) [xx, yx, yy, zx, zy, zz], DF: diagonal first (mrtrix, camino, AFQ) [xx, yy, zz, xy, xz, yz] ). [Default: UT]
   --tensor-scale scale     Tensor scale for --tensor. [Default: 400]
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
+  --track-opacity opa      Track opacity for --track. [Default: 1.0]
+  --track-radius radius    Tube radius to visualize tracks for --track. If it is negative or zero, use lines (default) instead of tubes. [Default: -1.0]
   --peak-scale scale       Peak scale for --peak. [Default: 0.5]
   --peak-opacity opa       Peak glyph opacity for --peak. [Default: 1.0]
   --peak-color r,g,b       Peak color opacity for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
@@ -140,6 +143,8 @@ def get_input_args(args):
     _args['--tensor-ft'] = arg_values(args['--tensor-ft'], str, 1)[0]
     _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
     _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
+    _args['--track-opacity'] = arg_values(args['--track-opacity'], float, 1)[0]
+    _args['--track-radius'] = arg_values(args['--track-radius'], float, 1)[0]
     _args['--peak-opacity'] = arg_values(args['--peak-opacity'], float, 1)[0]
     _args['--peak-scale'] = arg_values(args['--peak-scale'], float, 1)[0]
     _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
@@ -208,7 +213,10 @@ def scene_add_tract(scene, track_file, affine, _args):
         from dipy.tracking.streamline import transform_streamlines
         streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
-    stream_actor = actor.line(streamlines)
+    if _args['--track-radius']>0:
+        stream_actor = actor.streamtube(streamlines, opacity=_args['--track-opacity'], linewidth=_args['--track-radius'])
+    else:
+        stream_actor = actor.line(streamlines, opacity=_args['--track-opacity'])
 
     scene.add(stream_actor)
 
