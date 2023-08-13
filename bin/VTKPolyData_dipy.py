@@ -6,6 +6,7 @@ The code uses dipy and fury.
 Usage:
   VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--peak peak_file...]
             [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1]
+            [--vtk-opacity opa]
             [--image-opacity opa] [--image-range r1,r2] [--scalar-range r1,r2] [--ni]
             [--sh-scale scale] [--sh-opacity opa] [--no-normal]
             [--tensor-scale scale] [--tensor-opacity opa]
@@ -28,6 +29,7 @@ Options:
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. [lower, upper]. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
+  --vtk-opacity opa        VTK/VTK2 opacity for --vtk and --vtk2 [Default: 1.0]
   --image-range r1,r2      Lowest and highest contrast value for --image (3d image). [lower, upper]. If not set, use the minimal and maximal values in the image. [Default: -1,-1]
   --image-opacity opa      Slice opacity for --image. [Default: 1.0]
   --sh-opacity opacity     SH glyph opacity for --sh. [Default: 1.0]
@@ -131,6 +133,7 @@ def get_input_args(args):
     _args['--image-range'] = arg_values(args['--image-range'], float, 2)
 
     # one input
+    _args['--vtk-opacity'] = arg_values(args['--vtk-opacity'], float, 1)[0]
     _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
     _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1)[0]
     _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1)[0]
@@ -222,6 +225,7 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
         frame_actor.SetMapper(frame_mapper)
         prop = frame_actor.GetProperty()
         prop.SetRepresentationToWireframe()
+        prop.SetOpacity(_args['--vtk-opacity']);
         prop.SetColor(0.0, 0.0, 1.0)
         scene.AddActor(frame_actor)
 
@@ -266,6 +270,7 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
     surface_actor.SetMapper(surface_mapper)
     prop = surface_actor.GetProperty()
     prop.SetRepresentationToSurface()
+    prop.SetOpacity(_args['--vtk-opacity']);
 
     scene.add(surface_actor)
 
