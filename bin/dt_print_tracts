@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+
+
+from dipy.workflows.flow_runner import run_flow
+from dtdipy.workflows.print_tracts import PrintTracts
+
+if __name__ == "__main__":
+    run_flow(PrintTracts())
