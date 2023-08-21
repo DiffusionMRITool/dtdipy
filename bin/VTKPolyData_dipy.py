@@ -44,7 +44,7 @@ Options:
   --peak-opacity opa       Peak glyph opacity for --peak. [Default: 1.0]
   --peak-color r,g,b       Peak color opacity for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
-  --wc                     Use world coordinates.
+  --wc                     Use world coordinates (RASMM). If not set, use voxel space (VOX).
   --png png_file           Output png file.
   --png-num n              Output a series of png files with the azimuthal angle of camera rotation between 0 and 360. [Default: 1]
   --zoom zoom              Camera zoom factor. [Default: 1.0]
