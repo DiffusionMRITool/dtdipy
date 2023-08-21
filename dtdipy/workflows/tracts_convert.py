@@ -9,21 +9,21 @@ from dipy.io.image import load_nifti
 from dipy.tracking.streamline import transform_streamlines
 
 
-class TrackConvertFlow(Workflow):
+class TractsConvertFlow(Workflow):
     @classmethod
     def get_short_name(cls):
-        return 'track_convert'
+        return 'tracts_convert'
 
-    def run(self, input_files, out_track='out_track.trk', reference='same', vox=False, out_dir=''):
+    def run(self, input_files, out_tracts='out_tracts.trk', reference='same', vox=False, out_dir=''):
 
-        """ Workflow for converting a track file.
+        """ Workflow for converting a tract file.
 
         Parameters
         ----------
         input_files : string
-            Path to track file.
-        out_track : string, optional
-            Name of the output track file.
+            Path to a tract file.
+        out_tracts : string, optional
+            Name of the output tract file.
 
         reference : string, optional
             Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
@@ -39,17 +39,17 @@ class TrackConvertFlow(Workflow):
 
         io_it = self.get_io_iterator()
 
-        for input_path, out_track_path in io_it:
+        for input_path, out_tract_path in io_it:
 
-            logging.info('Convert track of {0}'.format(input_path))
+            logging.info('Convert tracts of {0}'.format(input_path))
 
-            track = load_tractogram(input_path, reference, bbox_valid_check=False)
+            tracts = load_tractogram(input_path, reference, bbox_valid_check=False)
 
             if reference!='same' and vox:
                 _, affine = load_nifti(reference)
-                track.streamlines = transform_streamlines(track.streamlines, np.linalg.inv(affine))
+                tracts.streamlines = transform_streamlines(tracts.streamlines, np.linalg.inv(affine))
 
-            save_tractogram(track, out_track, bbox_valid_check=False)
+            save_tractogram(tracts, out_tracts, bbox_valid_check=False)
 
-            logging.info('Track saved at {0}'.format(out_track_path))
+            logging.info('Tracts saved at {0}'.format(out_tract_path))
 
