@@ -23,6 +23,8 @@ class PrintTracts(Workflow):
 
         """ Workflow for converting a tract file.
 
+        dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
+
         Parameters
         ----------
         input_files : string
