@@ -69,6 +69,7 @@ VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png 
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --vtk2 tensor.vtk --image im.nii.gz --track "`/bin/ls *.trk`"
 
 Author(s): Jian Cheng (jian.cheng.1983@gmail.com)
+dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
 """
 
 import os, re

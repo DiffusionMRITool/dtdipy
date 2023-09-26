@@ -18,8 +18,6 @@ class TractsConvertFlow(Workflow):
 
         """ Workflow for converting a tract file.
 
-        dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
-
         Parameters
         ----------
         input_files : string
@@ -37,6 +35,10 @@ class TractsConvertFlow(Workflow):
             transform streamlines from ras to vox space. Use it carefully.
         out_dir : string, optional
             Output directory. (default current directory)
+
+        References
+        ----------
+        dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
         """
 
         io_it = self.get_io_iterator()

@@ -23,8 +23,6 @@ class PrintTracts(Workflow):
 
         """ Workflow for converting a tract file.
 
-        dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
-
         Parameters
         ----------
         input_files : string
@@ -44,6 +42,10 @@ class PrintTracts(Workflow):
             After loading with nibabel the origin is CENTER.
             'center': NIFTI.
             'corner': TRACKVIS.
+
+        References
+        ----------
+        dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
         """
 
         io_it = self.get_io_iterator()
@@ -51,9 +53,9 @@ class PrintTracts(Workflow):
         for input_path in io_it:
 
             if space.lower() == 'vox':
-                logging.info('Print track of {0} in the VOX space'.format(input_path))
+                logging.info('Print tract of {0} in the VOX space'.format(input_path))
             elif space.lower() == 'ras':
-                logging.info('Print track of {0} in the RAS space'.format(input_path))
+                logging.info('Print tract of {0} in the RAS space'.format(input_path))
             else:
                 raise('wrong space')
 
