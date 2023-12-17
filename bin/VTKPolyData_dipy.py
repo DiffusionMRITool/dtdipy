@@ -40,7 +40,7 @@ Options:
   --tensor-opacity opa     Tensor glyph opacity for --tensor. [Default: 1.0]
   --track-opacity opa      Track opacity for --track. [Default: 1.0]
   --track-radius radius    Tube radius to visualize tracks for --track. If it is negative or zero, use lines (default) instead of tubes. [Default: -1.0]
-  --peak-scale scale       Peak scale for --peak. [Default: 0.5]
+  --peak-scale scale       Peak length scale for --peak. [Default: 1.0]
   --peak-opacity opa       Peak glyph opacity for --peak. [Default: 1.0]
   --peak-color r,g,b       Peak color opacity for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
@@ -447,25 +447,29 @@ def scene_add_peak(scene, peak_file, actor_dict, _args):
     opacity = _args['--peak-opacity']
     color = _args['--peak-color']
 
+    # scale the peak lengths
+    if scale!=1.0:
+        peak = peak*scale
+
     # peak slicer for axial slice
     z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
     vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['peak_actor_z'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_z'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, colors=color)
     actor_dict['peak_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # peak slicer for coronal slice
     y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
     vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['peak_actor_y'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_y'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, colors=color)
     actor_dict['peak_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     # peak slicer for sagittal slice
     x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
     vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['peak_actor_x'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, linewidth=scale, colors=color)
+    actor_dict['peak_actor_x'] = actor.peak_slicer(peak, affine=affine, opacity=opacity, colors=color)
     actor_dict['peak_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     if _args['--axes'][0]>=-1 and grid_shape[1]>1 and grid_shape[2]>1:
