@@ -4,15 +4,16 @@ Description: Render a list of VTK data, track data, a nifti image, then view or 
 The code uses dipy and fury.
 
 Usage:
-  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--peak peak_file...]
+  VTKPolyData_dipy.py [--vtk f1...] [--vtk2 f1...] [--image <nifti_file>] [--track f1...] [--sh sh_file] [--tensor tensor_file] [--peak peak_file...] [--point coordinate]
             [--axes x,y,z] [--box x0,x1,y0,y1,z0,z1]
             [--vtk-opacity opa]
             [--image-opacity opa] [--image-range r1,r2] [--scalar-range r1,r2] [--ni]
             [--sh-scale scale] [--sh-opacity opa] [--no-normal]
-            [--tensor-scale scale] [--tensor-opacity opa]
+            [--tensor-scale scale] [--tensor-opacity opa] [--tensor-ft format]
             [--track-opacity opa] [--track-radius radius]
             [--peak-scale scale] [--peak-opacity opacity] [--peak-color r,g,b]
-            [--size s1,s2] [--wc] [--frame] [--tensor-ft format] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--angle azimuth,elevation]
+            [--point-scale scale] [--point-opacity opa] [--point-color color]
+            [--size s1,s2] [--wc] [--frame] [--png pngfile] [--png-num n] [--zoom zoom] [--bgcolor r,g,b] [-v] [--angle azimuth,elevation]
   VTKPolyData_dipy.py (-h | --help)
   VTKPolyData_dipy.py --version
 
@@ -25,8 +26,9 @@ Options:
   --track f1...            Input track file (.trk, .tck, .fib, .vtk, .dpy). Multiple inputs.
   --tensor tensor_file     Input 4D tensor file with 6 dimension. Use FA*eigenVector1 to color the glyph. Set --tensor-ft for different format of tensor image.
   --peak peak_file...      Input 4D nifti peak image file (X,Y,Z,N). Multiple inputs. Each voxel has a peak vector like (x1,y1,z1,x2,y2,z2,...).
+  --point coordinate       Input point coordinates. Input values (x1,y1,z1,x2,y2,z2,...),  or a txt file with Nx3 numbers for N points.
 
-  --axes x,y,z             Visualize image/tensor/sh along x,y,z axes. -2 means do not show that axis, -1 means show that axis (initial x/y/z in the middle). Default -2,-2,-2 to show 3 axes (with the initial position in the middle of the image), -2,18,30 to show y z axes (with the initial position at y=18,z=30). [Default: -1,-1,-1]
+  --axes -a x,y,z          Visualize image/tensor/sh along x,y,z axes. -2 means do not show that axis, -1 means show that axis (initial x/y/z in the middle). Default -2,-2,-2 to show 3 axes (with the initial position in the middle of the image), -2,18,30 to show y z axes (with the initial position at y=18,z=30). [Default: -1,-1,-1]
   --box x0,x1,y0,y1,z0,z1  Visualize tensor/sh glyphs inside the box. It is not for --image. Default -1,-1,-1,-1,-1,-1 shows no box. [Default: -1,-1,-1,-1,-1,-1]
   --scalar-range r1,r2     lowest and highest scalar values for the vtk coloring. [lower, upper]. It is used when scalar dimention is 1. If not set, use the range of the scalar values. [Default: -1,-1]
   --size s1,s2             Window size in pixels. [Default: 1200,900]
@@ -42,7 +44,10 @@ Options:
   --track-radius radius    Tube radius to visualize tracks for --track. If it is negative or zero, use lines (default) instead of tubes. [Default: -1.0]
   --peak-scale scale       Peak length scale for --peak. [Default: 1.0]
   --peak-opacity opa       Peak glyph opacity for --peak. [Default: 1.0]
-  --peak-color r,g,b       Peak color opacity for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
+  --peak-color r,g,b       Peak color for --peak. (If not set, every peak gets an orientation color in similarity to a DEC map as default.)
+  --point-scale scale      Point radius for --point. [Default: 1.0]
+  --point-opacity opa      Point opacity for --point. [Default: 1.0]
+  --point-color color      Point color for --point. Input values (r,g,b) for all points,  or a txt file with Nx3 color numbers for N points. [Default: 1.,1.,1]
   --angle azi,ele          Azimuth and elevation for camera. [Default: 0.,0.]
   --wc                     Use world coordinates (RASMM). If not set, use voxel space (VOX).
   --png png_file           Output png file.
@@ -67,6 +72,8 @@ VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --vtk2 tensor.vtk --image im.nii
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png --angle 0,0
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --image im.nii.gz --png out.png --angle 90,0 --png-num 10
 VTKPolyData_dipy.py --vtk "file1.vtk file2.vtk" --vtk2 tensor.vtk --image im.nii.gz --track "`/bin/ls *.trk`"
+VTKPolyData_dipy.py --vtk file.vtk --image im.nii.gz --sh odf.nii.gz --track fiber.trk --point 40,60,80,30,70,50
+VTKPolyData_dipy.py --vtk file.vtk --image im.nii.gz --sh odf.nii.gz --track fiber.trk --point points.txt
 
 Author(s): Jian Cheng (jian.cheng.1983@gmail.com)
 dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
@@ -93,8 +100,7 @@ from dipy.reconst.dti import decompose_tensor
 from dipy.data import get_sphere
 
 
-
-def arg_list(list_input):
+def arg_list(list_input: str):
     """parse input list. Multiple inputs split by space or comma."""
 
     tmp_list = [re.split(r'[,\s]\s*', x) for x in list_input]
@@ -102,20 +108,62 @@ def arg_list(list_input):
     return out_list
 
 
-def arg_values(value, typefunc, numberOfValues):
-    """set arguments based using comma. If numberOfValues<0, it supports arbitrary number of inputs."""
+def arg_values(value: str, typefunc: type, numberOfValues: int, errorStr: str='value'):
+    """set arguments based values with commas. If numberOfValues<0, it supports arbitrary number of inputs.
+
+    Parameters:
+        value           :  values with commas, or a txt file with values
+        typefunc        :  type of elements (e.g., int, float)
+        numberOfValues  :  required number of elements, if -1, it supports arbitrary number of elements
+        errorStr        :  str used in error message
+
+    Returns:
+        list_value      :  a list of values with given types.
+    """
     if value:
         value = value.strip()
         if value[0]=='(' and value[-1]==')':
             value = value[1:-1]
         values = value.split(',')
         if numberOfValues > 0 and len(values) != numberOfValues:
-            raise ValueError("wrong number of input values, len(", values, ") != ", numberOfValues)
+            raise ValueError("wrong number of input ", errorStr, ", len(", values, ") != ", numberOfValues)
         return list(map(typefunc, values))
     return None
 
 
-def get_input_args(args):
+def arg_values_or_file(value_file: str, typefunc, numberOfValues: int, nCols: int=1, errorStr: str='value'):
+    """set arguments based values with commas or from a txt file. Output an np.ndarray.
+
+    Parameters:
+        value_file      :  values with commas, or a txt file with values
+        typefunc        :  float
+        numberOfValues  :  required number of elements, if -1, it supports arbitrary number of elements
+        nCols           :  number of columns.
+        errorStr        :  str used in error message
+
+    Returns:
+        outMatrx        :  numpy array (N x nCols).
+    """
+
+    if value_file:
+        if os.path.isfile(value_file):
+            outMatrix = np.loadtxt(value_file)
+            if outMatrix.shape[1]!=nCols:
+                raise ValueError('wrong size of input ', errorStr,', outMatrix.shape=', outMatrix.shape)
+        else:
+            alist = arg_values(value_file,typefunc,numberOfValues,errorStr)
+            n = len(alist)//nCols
+            if n*nCols != len(alist):
+                raise ValueError('wrong size of input ', errorStr, ', len(value_file)=', len(alist))
+
+            outMatrix = np.asarray(alist).reshape(n,nCols)
+    else:
+        outMatrix = None
+
+    return outMatrix
+
+
+def get_input_args(args: dict):
     """parse args"""
 
     _args = args
@@ -127,44 +175,50 @@ def get_input_args(args):
     _args['--peak'] = arg_list(args['--peak'])
 
     #  split by comma, given number of inputs
-    _args['--axes'] = arg_values(args['--axes'], float, 3)
-    _args['--box'] = arg_values(args['--box'], int, 6)
-    _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2)
-    _args['--size'] = arg_values(args['--size'], int, 2)
-    _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3)
-    _args['--peak-color'] = arg_values(args['--peak-color'], float, 3)
-    _args['--angle'] = arg_values(args['--angle'], float, 2)
-    _args['--image-range'] = arg_values(args['--image-range'], float, 2)
+    _args['--axes'] = arg_values(args['--axes'], float, 3, '--axes')
+    _args['--box'] = arg_values(args['--box'], int, 6, '--box')
+    _args['--scalar-range'] = arg_values(args['--scalar-range'], float, 2, '--scalar-range')
+    _args['--size'] = arg_values(args['--size'], int, 2, '--size')
+    _args['--bgcolor'] = arg_values(args['--bgcolor'], float, 3, '--bgcolor')
+    _args['--peak-color'] = arg_values(args['--peak-color'], float, 3, '--peak-color')
+    _args['--angle'] = arg_values(args['--angle'], float, 2, '--angle')
+    _args['--image-range'] = arg_values(args['--image-range'], float, 2, '--image-range')
 
     # one input
-    _args['--vtk-opacity'] = arg_values(args['--vtk-opacity'], float, 1)[0]
-    _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1)[0]
-    _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1)[0]
-    _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1)[0]
-    _args['--tensor-ft'] = arg_values(args['--tensor-ft'], str, 1)[0]
-    _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1)[0]
-    _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1)[0]
-    _args['--track-opacity'] = arg_values(args['--track-opacity'], float, 1)[0]
-    _args['--track-radius'] = arg_values(args['--track-radius'], float, 1)[0]
-    _args['--peak-opacity'] = arg_values(args['--peak-opacity'], float, 1)[0]
-    _args['--peak-scale'] = arg_values(args['--peak-scale'], float, 1)[0]
-    _args['--zoom'] = arg_values(args['--zoom'], float, 1)[0]
-    _args['--png-num'] = arg_values(args['--png-num'], int, 1)[0]
+    _args['--vtk-opacity'] = arg_values(args['--vtk-opacity'], float, 1, '--vtk-opacity')[0]
+    _args['--image-opacity'] = arg_values(args['--image-opacity'], float, 1, '--image-opacity')[0]
+    _args['--tensor-opacity'] = arg_values(args['--tensor-opacity'], float, 1, '--tensor-opacity')[0]
+    _args['--tensor-scale'] = arg_values(args['--tensor-scale'], float, 1, '--tensor-scale')[0]
+    _args['--tensor-ft'] = arg_values(args['--tensor-ft'], str, 1, '--tensor-ft')[0]
+    _args['--sh-opacity'] = arg_values(args['--sh-opacity'], float, 1, '--sh-opacity')[0]
+    _args['--sh-scale'] = arg_values(args['--sh-scale'], float, 1, '--sh-scale')[0]
+    _args['--track-opacity'] = arg_values(args['--track-opacity'], float, 1, '--track-opacity')[0]
+    _args['--track-radius'] = arg_values(args['--track-radius'], float, 1, '--track-radius')[0]
+    _args['--peak-opacity'] = arg_values(args['--peak-opacity'], float, 1, '--peak-opacity')[0]
+    _args['--peak-scale'] = arg_values(args['--peak-scale'], float, 1, '--peak-scale')[0]
+    _args['--point-opacity'] = arg_values(args['--point-opacity'], float, 1, '--point-opacity')[0]
+    _args['--point-scale'] = arg_values(args['--point-scale'], float, 1, '--point-scale')[0]
+    _args['--zoom'] = arg_values(args['--zoom'], float, 1, '--zoom')[0]
+    _args['--png-num'] = arg_values(args['--png-num'], int, 1, '--png-num')[0]
+
+    #  split by comma, or from a file
+    _args['--point'] = arg_values_or_file(args['--point'], float, -1, 3, '--point')
+    _args['--point-color'] = arg_values_or_file(args['--point-color'], float, -1, 3, '--point-color')
 
     return _args
 
 
-def set_box_on_shape(box, shape):
+def set_box_on_shape(box: list, shape: tuple):
     """correct box values based on shape"""
 
     for i in range(3):
         if box[2*i]>box[2*i+1]:
-            raise("wrong box is given. box=", box)
+            raise ValueError("wrong box is given. box=", box)
         box[2*i] = max(box[2*i], 0)
         box[2*i+1] = shape[i]-1 if box[2*i+1]<0 else min(box[2*i+1], shape[i]-1)
 
 
-def update_visualbox(box, vbox):
+def update_visualbox(box: list, vbox: list):
     """update the visual vbox based on the given box"""
 
     # if box is default value, do not change vbox
@@ -189,7 +243,7 @@ def update_visualbox(box, vbox):
             vbox[2*i+1] = min(box[2*i+1], vbox[2*i+1])
 
 
-def scene_add_tract(scene, track_file, affine, _args):
+def scene_add_tract(scene: window.Scene, track_file: str, affine: np.ndarray, _args: dict):
     """add a track file"""
 
     if _args['--image']:
@@ -222,7 +276,7 @@ def scene_add_tract(scene, track_file, affine, _args):
     scene.add(stream_actor)
 
 
-def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
+def scene_add_vtk(scene: window.Scene, vtk_file: str, _args: dict, is_vtk2: bool):
     """add a vtk file"""
 
     polyData = utlVTK.readPolydata(vtk_file)
@@ -284,7 +338,7 @@ def scene_add_vtk(scene, vtk_file, _args, is_vtk2):
     scene.add(surface_actor)
 
 
-def scene_add_image(scene, image_file, actor_dict, _args):
+def scene_add_image(scene: window.Scene, image_file: str, actor_dict: dict, _args: dict):
     """add a 3D image, or a 4D image with 3 channels as RGB values"""
 
     data, affine = load_nifti(image_file)
@@ -343,7 +397,7 @@ def scene_add_image(scene, image_file, actor_dict, _args):
     return affine, shape
 
 
-def scene_add_sh(scene, sh_file, actor_dict, _args):
+def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dict):
     """add a 4D SH image file"""
 
     sh_img = nib.load(sh_file)
@@ -423,7 +477,7 @@ def scene_add_sh(scene, sh_file, actor_dict, _args):
     return sh_affine, grid_shape
 
 
-def scene_add_peak(scene, peak_file, actor_dict, _args):
+def scene_add_peak(scene: window.Scene, peak_file: str, actor_dict: dict, _args: dict):
     """add a 4D peak image file"""
 
     peak_img = nib.load(peak_file)
@@ -482,8 +536,8 @@ def scene_add_peak(scene, peak_file, actor_dict, _args):
     return peak_affine, grid_shape
 
 
-def scene_add_tensor(scene, tensor_file, actor_dict, _args):
-    """add a 4D tensor image file with 6 dimension (lower triangle format)"""
+def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _args: dict):
+    """add a 4D tensor image file with 6 dimension (with different format UT, LT, DF)."""
 
     tensor_img = nib.load(tensor_file)
     tensor = tensor_img.get_fdata()
@@ -545,6 +599,23 @@ def scene_add_tensor(scene, tensor_file, actor_dict, _args):
         scene.add(actor_dict['tensor_actor_z'])
 
     return tensor_affine, grid_shape
+
+
+def scene_add_point(scene: window.Scene, affine: np.ndarray, _args: dict):
+    """add a set of points (x,y,z) in voxel coordinates. _args['--point'] is an Nx3 numpy array"""
+
+    if _args['--wc']:
+        _args['--point'] = np.dot(_args['--point'], affine[:3,:3].T) + affine[:3,3].T
+
+    #  make N colors from 1 color
+    if _args['--point-color'].shape[0] == 1:
+        _args['--point-color'] = np.tile(_args['--point-color'], (_args['--point'].shape[0], 1) )
+
+    if _args['--point-color'].shape[0] != _args['--point'].shape[0]:
+        raise ValueError('Number of colors is not consistent with the number of points. Number of points = ', _args['--point'].shape[0], '. Number of points = ', _args['--point-color'].shape[0])
+
+    actor_sphere = actor.sphere(_args['--point'], _args['--point-color'], radii=_args['--point-scale'], opacity=_args['--point-opacity'])
+    scene.add(actor_sphere)
 
 
 def scene_add_ui(scene, _args, actor_dict, affine, shape):
@@ -697,9 +768,9 @@ def main():
     if (args['--verbose']):
         print('_args=',_args)
 
-    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track'] and not _args['--peak']:
+    if not _args['--vtk'] and not _args['--vtk2'] and not _args['--image'] and not _args['--sh'] and not _args['--tensor'] and not _args['--track'] and not _args['--peak'] and args['--point'] is None:
         print(_doc)
-        raise ValueError("Need inputs for --vtk, --vtk2, --image, --sh, --tensor, --peak")
+        raise ValueError("Need inputs for --vtk, --vtk2, --image, --sh, --tensor, --peak, --point")
 
     affine=np.eye(4)
     shape=[]
@@ -712,7 +783,6 @@ def main():
     if _args['--vtk']:
         for tf in _args['--vtk']:
             scene_add_vtk(scene, os.path.expanduser(tf), _args, False)
-
 
     #  add vtk2 files for tensors
     if _args['--vtk2']:
@@ -774,6 +844,10 @@ def main():
         for tf in _args['--track']:
             scene_add_tract(scene, os.path.expanduser(tf), affine, _args)
 
+    #  add points
+    if _args['--point'] is not None:
+        scene_add_point(scene, affine, _args)
+
     show_m = window.ShowManager(scene, size=(_args['--size']))
     show_m.initialize()
 
@@ -830,9 +904,6 @@ def main():
         else:
             utlVTK.record_render(scene, out_path=os.path.splitext(_args['--png'])[0], size=(_args['--size']),
                         reset_camera=False, path_numbering=True, n_frames=_args['--png-num'], az_ang=360/_args['--png-num'])
-
-
-
 
 
 if __name__ == '__main__':
