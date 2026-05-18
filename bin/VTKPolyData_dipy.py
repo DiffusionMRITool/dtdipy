@@ -418,12 +418,12 @@ def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dic
 
     sh_order = order_from_ncoef(sh.shape[-1])
 
-    sphere_low = get_sphere('repulsion100')
-    B_low = sh_to_sf_matrix(sphere_low, sh_order, return_inv=False)
+    sphere_low = get_sphere(name='repulsion100')
+    B_low = sh_to_sf_matrix(sphere_low, sh_order_max=sh_order, return_inv=False)
 
-    sphere_high = get_sphere('symmetric362')
-    sphere_high.faces = fix_winding_order(sphere_high.vertices, sphere_high.faces, True)
-    B_high = sh_to_sf_matrix(sphere_high, sh_order, return_inv=False)
+    sphere_high = get_sphere(name='symmetric362')
+    sphere_high.faces = fix_winding_order(vertices=sphere_high.vertices, triangles=sphere_high.faces, clockwise=True)
+    B_high = sh_to_sf_matrix(sphere_high, sh_order_max=sh_order, return_inv=False)
 
     _args['sphere_dict'] = {'Low resolution': (sphere_low, B_low),
                 'High resolution': (sphere_high, B_high)}
@@ -439,7 +439,7 @@ def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dic
     z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
     vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['sh_actor_z'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
+    actor_dict['sh_actor_z'] = actor.odf_slicer(odfs=sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
@@ -450,7 +450,7 @@ def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dic
     y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
     vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['sh_actor_y'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
+    actor_dict['sh_actor_y'] = actor.odf_slicer(odfs=sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
@@ -461,7 +461,7 @@ def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dic
     x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
     vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['sh_actor_x'] = actor.odf_slicer(sh, affine=affine, sphere=sphere_low,
+    actor_dict['sh_actor_x'] = actor.odf_slicer(odfs=sh, affine=affine, sphere=sphere_low,
                                 scale=scale, norm=norm,
                                 radial_scale=radial_scale, opacity=opacity,
                                 colormap=colormap, global_cm=global_cm,
@@ -576,19 +576,19 @@ def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _a
     z_initpoint = int(np.round(_args['--axes'][2] if _args['--axes'][2]>=0 else grid_shape[2] // 2))
     vbox = [0, grid_shape[0] - 1, 0, grid_shape[1] - 1, z_initpoint, z_initpoint]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
+    actor_dict['tensor_actor_z'] = actor.tensor_slicer(evals=evals, evecs=evecs, affine=affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_z'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     y_initpoint = int(np.round(_args['--axes'][1] if _args['--axes'][1]>=0 else grid_shape[1] // 2))
     vbox = [0, grid_shape[0] - 1, y_initpoint, y_initpoint, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['tensor_actor_y'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
+    actor_dict['tensor_actor_y'] = actor.tensor_slicer(evals=evals, evecs=evecs, affine=affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_y'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
     x_initpoint = int(np.round(_args['--axes'][0] if _args['--axes'][0]>=0 else grid_shape[0] // 2))
     vbox = [x_initpoint, x_initpoint, 0, grid_shape[1] - 1, 0, grid_shape[2] - 1]
     update_visualbox(_args['--box'], vbox)
-    actor_dict['tensor_actor_x'] = actor.tensor_slicer(evals, evecs, affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
+    actor_dict['tensor_actor_x'] = actor.tensor_slicer(evals=evals, evecs=evecs, affine=affine, norm=norm_evals, sphere=sphere, scale=scale, opacity=opacity)
     actor_dict['tensor_actor_x'].display_extent(vbox[0],vbox[1],vbox[2],vbox[3],vbox[4],vbox[5])
 
 
@@ -849,7 +849,7 @@ def main():
     if _args['--point'] is not None:
         scene_add_point(scene, affine, _args)
 
-    show_m = window.ShowManager(scene, size=(_args['--size']))
+    show_m = window.ShowManager(scene=scene, size=(_args['--size']), title='VTKPolyData_dipy')
     show_m.initialize()
 
     # add ui for image slice
