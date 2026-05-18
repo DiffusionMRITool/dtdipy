@@ -82,6 +82,7 @@ dmritool-dipy (https://github.com/DiffusionMRITool/dtdipy)
 import os, re
 import numpy as np
 from docopt import docopt
+from typing import List, Tuple
 
 import dt.utl.utlVTK as utlVTK
 from dt.utl.utlVTK import vtk
@@ -100,15 +101,15 @@ from dipy.reconst.dti import decompose_tensor
 from dipy.data import get_sphere
 
 
-def arg_list(list_input: str):
-    """parse input list. Multiple inputs split by space or comma."""
+def arg_list(list_input: List[str]) -> List[str]:
+    """parse input str list. Multiple inputs split by space or comma."""
 
     tmp_list = [re.split(r'[,\s]\s*', x) for x in list_input]
     out_list = [item for sublist in tmp_list for item in sublist]
     return out_list
 
 
-def arg_values(value: str, typefunc: type, numberOfValues: int, errorStr: str='value'):
+def arg_values(value: str, typefunc: type, numberOfValues: int, errorStr: str='value') -> List[type]:
     """set arguments based values with commas. If numberOfValues<0, it supports arbitrary number of inputs.
 
     Parameters:
@@ -131,7 +132,7 @@ def arg_values(value: str, typefunc: type, numberOfValues: int, errorStr: str='v
     return None
 
 
-def arg_values_or_file(value_file: str, typefunc, numberOfValues: int, nCols: int=1, errorStr: str='value'):
+def arg_values_or_file(value_file: str, typefunc, numberOfValues: int, nCols: int=1, errorStr: str='value') -> np.ndarray:
     """set arguments based values with commas or from a txt file. Output an np.ndarray.
 
     Parameters:
@@ -163,7 +164,7 @@ def arg_values_or_file(value_file: str, typefunc, numberOfValues: int, nCols: in
     return outMatrix
 
 
-def get_input_args(args: dict):
+def get_input_args(args: dict) -> dict:
     """parse args"""
 
     _args = args
@@ -208,7 +209,7 @@ def get_input_args(args: dict):
     return _args
 
 
-def set_box_on_shape(box: list, shape: tuple):
+def set_box_on_shape(box: list, shape: tuple) -> None:
     """correct box values based on shape"""
 
     for i in range(3):
@@ -218,7 +219,7 @@ def set_box_on_shape(box: list, shape: tuple):
         box[2*i+1] = shape[i]-1 if box[2*i+1]<0 else min(box[2*i+1], shape[i]-1)
 
 
-def update_visualbox(box: list, vbox: list):
+def update_visualbox(box: list, vbox: list) -> None:
     """update the visual vbox based on the given box"""
 
     # if box is default value, do not change vbox
@@ -243,7 +244,7 @@ def update_visualbox(box: list, vbox: list):
             vbox[2*i+1] = min(box[2*i+1], vbox[2*i+1])
 
 
-def scene_add_tract(scene: window.Scene, track_file: str, affine: np.ndarray, _args: dict):
+def scene_add_tract(scene: window.Scene, track_file: str, affine: np.ndarray, _args: dict) -> None:
     """add a track file"""
 
     if _args['--image']:
@@ -276,7 +277,7 @@ def scene_add_tract(scene: window.Scene, track_file: str, affine: np.ndarray, _a
     scene.add(stream_actor)
 
 
-def scene_add_vtk(scene: window.Scene, vtk_file: str, _args: dict, is_vtk2: bool):
+def scene_add_vtk(scene: window.Scene, vtk_file: str, _args: dict, is_vtk2: bool) -> None:
     """add a vtk file"""
 
     polyData = utlVTK.readPolydata(vtk_file)
@@ -338,7 +339,7 @@ def scene_add_vtk(scene: window.Scene, vtk_file: str, _args: dict, is_vtk2: bool
     scene.add(surface_actor)
 
 
-def scene_add_image(scene: window.Scene, image_file: str, actor_dict: dict, _args: dict):
+def scene_add_image(scene: window.Scene, image_file: str, actor_dict: dict, _args: dict) -> Tuple[np.ndarray]:
     """add a 3D image, or a 4D image with 3 channels as RGB values"""
 
     data, affine = load_nifti(image_file)
@@ -397,7 +398,7 @@ def scene_add_image(scene: window.Scene, image_file: str, actor_dict: dict, _arg
     return affine, shape
 
 
-def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dict):
+def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dict) -> Tuple[np.ndarray]:
     """add a 4D SH image file"""
 
     sh_img = nib.load(sh_file)
@@ -477,7 +478,7 @@ def scene_add_sh(scene: window.Scene, sh_file: str, actor_dict: dict, _args: dic
     return sh_affine, grid_shape
 
 
-def scene_add_peak(scene: window.Scene, peak_file: str, actor_dict: dict, _args: dict):
+def scene_add_peak(scene: window.Scene, peak_file: str, actor_dict: dict, _args: dict) -> Tuple[np.ndarray]:
     """add a 4D peak image file"""
 
     peak_img = nib.load(peak_file)
@@ -536,7 +537,7 @@ def scene_add_peak(scene: window.Scene, peak_file: str, actor_dict: dict, _args:
     return peak_affine, grid_shape
 
 
-def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _args: dict):
+def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _args: dict) -> Tuple[np.ndarray]:
     """add a 4D tensor image file with 6 dimension (with different format UT, LT, DF)."""
 
     tensor_img = nib.load(tensor_file)
@@ -601,7 +602,7 @@ def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _a
     return tensor_affine, grid_shape
 
 
-def scene_add_point(scene: window.Scene, affine: np.ndarray, _args: dict):
+def scene_add_point(scene: window.Scene, affine: np.ndarray, _args: dict) -> None:
     """add a set of points (x,y,z) in voxel coordinates. _args['--point'] is an Nx3 numpy array"""
 
     if _args['--wc']:
@@ -618,7 +619,7 @@ def scene_add_point(scene: window.Scene, affine: np.ndarray, _args: dict):
     scene.add(actor_sphere)
 
 
-def scene_add_ui(scene, _args, actor_dict, affine, shape):
+def scene_add_ui(scene, _args, actor_dict, affine, shape) -> ui.Panel2D:
     """add ui for image slice"""
 
     line_slider_x = ui.LineSlider2D(min_value=0,
