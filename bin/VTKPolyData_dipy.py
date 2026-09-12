@@ -569,7 +569,7 @@ def scene_add_tensor(scene: window.Scene, tensor_file: str, actor_dict: dict, _a
     norm_evals = False
 
     #  sphere = get_sphere('symmetric362')
-    sphere = get_sphere('repulsion100')
+    sphere = get_sphere(name='repulsion100')
     scale = _args['--tensor-scale']
     opacity = _args['--tensor-opacity']
 
